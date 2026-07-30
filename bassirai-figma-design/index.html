@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BassirAI — Figma Design System & Interactive Prototype</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="figma-dark-theme">
+
+  <!-- FIGMA SHELL CONTAINER -->
+  <div class="figma-shell">
+    
+    <!-- FIGMA TOP NAVIGATION BAR -->
+    <header class="figma-header">
+      <div class="header-left">
+        <div class="figma-logo">
+          <svg width="20" height="30" viewBox="0 0 20 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 0C2.24 0 0 2.24 0 5C0 7.76 2.24 10 5 10H10V5C10 2.24 7.76 0 5 0Z" fill="#F24E1E"/>
+            <path d="M5 10C2.24 10 0 12.24 0 15C0 17.76 2.24 20 5 20H10V10H5Z" fill="#A259FF"/>
+            <path d="M5 20C2.24 20 0 22.24 0 25C0 27.76 2.24 30 5 30C7.76 30 10 27.76 10 25V20H5Z" fill="#0ACF83"/>
+            <path d="M10 10H15C17.76 10 20 7.76 20 5C20 2.24 17.76 0 15 0H10V10Z" fill="#FF7262"/>
+            <path d="M10 15C10 17.76 12.24 20 15 20C17.76 20 20 17.76 20 15C20 12.24 17.76 10 15 10H10V15Z" fill="#1ABC9C"/>
+          </svg>
+        </div>
+        <div class="project-info">
+          <span class="project-name">BassirAI Platform MVP</span>
+          <span class="file-status">Draft / Interactive Design Spec</span>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        <div class="figma-tools">
+          <button class="tool-btn active" title="Move (V)"><i data-lucide="mouse-pointer"></i></button>
+          <button class="tool-btn" title="Region / Frame (F)"><i data-lucide="layout"></i></button>
+          <button class="tool-btn" title="Rectangle (R)"><i data-lucide="square"></i></button>
+          <button class="tool-btn" title="Text (T)"><i data-lucide="type"></i></button>
+          <button class="tool-btn" title="Resources"><i data-lucide="component"></i></button>
+          <button class="tool-btn" title="Hand (H)"><i data-lucide="hand"></i></button>
+          <button class="tool-btn" title="Comment (C)"><i data-lucide="message-square"></i></button>
+        </div>
+      </div>
+      
+      <div class="header-right">
+        <div class="theme-switcher-container">
+          <button id="themeToggleBtn" class="theme-toggle-btn" title="Toggle Light/Dark Theme">
+            <i data-lucide="sun"></i>
+          </button>
+        </div>
+        <div class="zoom-selector">
+          <span id="zoomPercent">85%</span>
+          <i data-lucide="chevron-down" class="small-chevron"></i>
+        </div>
+        <button class="share-btn"><i data-lucide="users"></i> Share</button>
+        <button id="playPrototypeBtn" class="play-btn" title="Launch Interactive Prototype (Present Mode)">
+          <i data-lucide="play" class="play-icon"></i> Play Mode
+        </button>
+      </div>
+    </header>
+
+    <!-- FIGMA MAIN WORKSPACE -->
+    <div class="figma-workspace">
+      
+      <!-- LEFT SIDEBAR: Pages & Layers -->
+      <aside class="figma-sidebar left-sidebar">
+        <!-- Pages Section -->
+        <div class="sidebar-section pages-section">
+          <div class="section-header">
+            <span>Pages</span>
+            <i data-lucide="plus" class="add-icon"></i>
+          </div>
+          <ul class="pages-list" id="pagesList">
+            <li class="page-item active" data-page="cover">
+              <i data-lucide="file-text"></i> Cover & References
+            </li>
+            <li class="page-item" data-page="design-system">
+              <i data-lucide="box"></i> Design System Spec
+            </li>
+            <li class="page-item" data-page="m1-onboarding">
+              <i data-lucide="sparkles"></i> M1: Auth & Onboarding
+            </li>
+            <li class="page-item" data-page="m3-inbox">
+              <i data-lucide="message-circle"></i> M3: Unified Inbox
+            </li>
+            <li class="page-item" data-page="m5-dashboard">
+              <i data-lucide="bar-chart-2"></i> M5: Clinic Dashboard
+            </li>
+            <li class="page-item" data-page="m4-booking">
+              <i data-lucide="calendar"></i> M4: Booking Handoff
+            </li>
+          </ul>
+        </div>
+
+        <!-- Layers Section -->
+        <div class="sidebar-section layers-section">
+          <div class="section-header">
+            <span>Layers</span>
+            <i data-lucide="filter" class="filter-icon"></i>
+          </div>
+          <div class="layers-tree-container">
+            <ul class="layers-tree" id="layersTree">
+              <!-- Dynamically populated based on active page -->
+            </ul>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CANVAS VIEWPORT -->
+      <main class="figma-canvas" id="figmaCanvas">
+        <div class="canvas-container" id="canvasContainer" style="transform: scale(0.85); translate: 0px 0px;">
+          <!-- Dynamically loaded frames/artboards depending on the active page -->
+          <div class="canvas-content-wrapper" id="canvasContentWrapper">
+            <!-- Active Page content goes here -->
+          </div>
+        </div>
+        
+        <!-- Canvas Status/Zoom Indicator -->
+        <div class="canvas-zoom-controls">
+          <button id="zoomOutBtn"><i data-lucide="minus"></i></button>
+          <button id="zoomResetBtn">Reset</button>
+          <button id="zoomInBtn"><i data-lucide="plus"></i></button>
+        </div>
+      </main>
+
+      <!-- RIGHT SIDEBAR: Inspect & CSS Properties -->
+      <aside class="figma-sidebar right-sidebar">
+        <!-- Tabs -->
+        <div class="right-sidebar-tabs">
+          <button class="sidebar-tab active" data-tab="design">Design</button>
+          <button class="sidebar-tab" data-tab="prototype">Prototype</button>
+          <button class="sidebar-tab" data-tab="inspect">Inspect</button>
+        </div>
+
+        <div class="sidebar-tab-content active" id="designTabContent">
+          <!-- Selection Info -->
+          <div class="sidebar-section selection-section">
+            <div class="section-title">Selected Element</div>
+            <div class="selected-element-details">
+              <div class="element-name-row">
+                <i data-lucide="square" class="elem-icon" id="inspectElementIcon"></i>
+                <span id="inspectElementName" class="elem-name">None selected</span>
+              </div>
+              <span class="element-type" id="inspectElementType">Select any element on the canvas to inspect it</span>
+            </div>
+          </div>
+
+          <!-- Alignment & Layout -->
+          <div class="sidebar-section layout-section">
+            <div class="section-title">Alignment</div>
+            <div class="align-grid">
+              <button class="align-btn" title="Align Left"><i data-lucide="align-horizontal-distribute-center"></i></button>
+              <button class="align-btn" title="Align Center"><i data-lucide="align-center"></i></button>
+              <button class="align-btn" title="Align Right"><i data-lucide="align-vertical-distribute-center"></i></button>
+              <button class="align-btn" title="Align Top"><i data-lucide="align-start"></i></button>
+              <button class="align-btn" title="Align Middle"><i data-lucide="align-end"></i></button>
+              <button class="align-btn" title="Align Bottom"><i data-lucide="align-horizontal-space-between"></i></button>
+            </div>
+
+            <div class="geometry-grid">
+              <div class="geo-input-group">
+                <span class="label">X</span>
+                <input type="text" id="inspectGeoX" value="-" readonly>
+              </div>
+              <div class="geo-input-group">
+                <span class="label">Y</span>
+                <input type="text" id="inspectGeoY" value="-" readonly>
+              </div>
+              <div class="geo-input-group">
+                <span class="label">W</span>
+                <input type="text" id="inspectGeoW" value="-" readonly>
+              </div>
+              <div class="geo-input-group">
+                <span class="label">H</span>
+                <input type="text" id="inspectGeoH" value="-" readonly>
+              </div>
+              <div class="geo-input-group">
+                <span class="label"><i data-lucide="rotate-cw"></i></span>
+                <input type="text" value="0°" readonly>
+              </div>
+              <div class="geo-input-group">
+                <span class="label"><i data-lucide="corner-down-right"></i></span>
+                <input type="text" id="inspectGeoR" value="-" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- Color Styles -->
+          <div class="sidebar-section color-section">
+            <div class="section-title">Color System Fill</div>
+            <div class="color-rows-container">
+              <div class="color-row">
+                <span class="color-preview" id="inspectColorPreview" style="background-color: transparent;"></span>
+                <input type="text" id="inspectColorHex" class="color-hex-val" value="#FFFFFF" readonly>
+                <input type="text" class="color-opacity-val" value="100%" readonly>
+              </div>
+            </div>
+          </div>
+
+          <!-- Typography Info -->
+          <div class="sidebar-section typography-section" id="inspectTypographySection" style="display:none;">
+            <div class="section-title">Typography</div>
+            <div class="typo-details">
+              <div class="typo-row">
+                <span class="typo-label">Family</span>
+                <span class="typo-val" id="inspectFontFamily">Inter</span>
+              </div>
+              <div class="typo-row">
+                <span class="typo-label">Size</span>
+                <span class="typo-val" id="inspectFontSize">14px</span>
+              </div>
+              <div class="typo-row">
+                <span class="typo-label">Weight</span>
+                <span class="typo-val" id="inspectFontWeight">Normal</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Inspiration Reference Notes -->
+          <div class="sidebar-section inspiration-section">
+            <div class="section-title">Design Notes & References</div>
+            <div class="inspiration-content">
+              <div class="ref-badge modmed-badge">
+                <span class="ref-dot"></span> modmed.com
+              </div>
+              <p class="ref-desc">Influenced the layout grid, tabular navigation tabs, medical-level information density, and the appointment booking lists.</p>
+
+              <div class="ref-badge hyro-badge">
+                <span class="ref-dot"></span> hyro.ai
+              </div>
+              <p class="ref-desc">Inspired the dynamic AI/Human handoff control toggle, the sub-second latency analytics, and the Llama 3.3 agent setup parameters.</p>
+
+              <div class="ref-badge healthtap-badge">
+                <span class="ref-dot"></span> healthtap.com
+              </div>
+              <p class="ref-desc">Inspired the simplified patient details card, the online/offline status bubbles, and conversational chat interfaces.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Prototype Tab -->
+        <div class="sidebar-tab-content" id="prototypeTabContent">
+          <div class="sidebar-section">
+            <div class="section-title">Flow Connections</div>
+            <p class="ref-desc" style="margin-bottom:12px;">This project contains an interactive presentation prototype. Click the <strong>Play Mode</strong> button in the top right to launch it.</p>
+            <div class="prototype-links-list">
+              <div class="proto-link-item">
+                <span class="trigger-name">Click "Start Setup"</span>
+                <i data-lucide="arrow-right"></i>
+                <span class="target-screen">M1: Onboarding</span>
+              </div>
+              <div class="proto-link-item">
+                <span class="trigger-name">Click "Unified Inbox"</span>
+                <i data-lucide="arrow-right"></i>
+                <span class="target-screen">M3: Unified Inbox</span>
+              </div>
+              <div class="proto-link-item">
+                <span class="trigger-name">Click "Analytics"</span>
+                <i data-lucide="arrow-right"></i>
+                <span class="target-screen">M5: Clinic Dashboard</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inspect / Code Tab -->
+        <div class="sidebar-tab-content" id="inspectTabContent">
+          <div class="sidebar-section">
+            <div class="section-title">CSS Code Spec</div>
+            <div class="code-export-container">
+              <pre><code id="inspectCssCode">/* Select an element on the canvas to view its CSS specifications */</code></pre>
+            </div>
+            <button class="copy-code-btn" id="copyCodeBtn"><i data-lucide="copy"></i> Copy CSS</button>
+          </div>
+          
+          <div class="sidebar-section">
+            <div class="section-title">MVP Component Info</div>
+            <div class="component-meta-card">
+              <div class="meta-label">Module Target</div>
+              <div class="meta-val" id="inspectMetaModule">-</div>
+              <div class="meta-label" style="margin-top:10px;">Implementation Notes</div>
+              <div class="meta-val" id="inspectMetaNotes">-</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+  </div>
+
+
+  <!-- PLAY MODE / PROTOTYPE FULL SCREEN OVERLAY -->
+  <div class="prototype-player-overlay" id="prototypePlayerOverlay">
+    
+    <!-- Prototype Player Header -->
+    <header class="player-header">
+      <div class="player-left">
+        <button class="exit-player-btn" id="exitPlayerBtn" title="Back to Figma Workspace">
+          <i data-lucide="arrow-left"></i>
+        </button>
+        <span class="player-title">BassirAI Platform MVP — Interactive Prototype (Present Mode)</span>
+      </div>
+      <div class="player-center">
+        <!-- Interactive Mode Selector -->
+        <div class="play-mode-pill">
+          <button class="mode-pill-btn active" data-pmode="desktop">Desktop (Admin Portal)</button>
+          <button class="mode-pill-btn" data-pmode="mobile">Mobile (WhatsApp Simulator)</button>
+        </div>
+      </div>
+      <div class="player-right">
+        <!-- Demo Quick-Controls -->
+        <button class="demo-control-btn active" id="demoToggleTone" title="Switch AI Tone">
+          <i data-lucide="sparkles"></i> <span id="currentDemoToneText">Tone: Professional</span>
+        </button>
+        <button class="demo-control-btn" id="demoRestartBtn" title="Restart Onboarding Demo">
+          <i data-lucide="refresh-cw"></i> Restart
+        </button>
+      </div>
+    </header>
+
+    <!-- Player Screen Frame container -->
+    <div class="player-frame-container" id="playerFrameContainer">
+      
+      <!-- DESKTOP SIMULATOR DEVICE -->
+      <div class="desktop-device-frame" id="desktopDeviceFrame">
+        <!-- Simulated Admin Browser Window -->
+        <div class="browser-window">
+          <div class="browser-header">
+            <div class="browser-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <div class="browser-address-bar">
+              <i data-lucide="lock" class="lock-icon"></i>
+              <span>admin.bassirai.com/dashboard</span>
+            </div>
+            <div class="browser-actions">
+              <i data-lucide="user" class="profile-icon"></i>
+            </div>
+          </div>
+          <div class="browser-viewport" id="desktopBrowserViewport">
+            <!-- Simulated application screens will load here dynamically in interactive mode -->
+          </div>
+        </div>
+      </div>
+
+      <!-- MOBILE SIMULATOR DEVICE (WhatsApp / Patient Side Chat) -->
+      <div class="mobile-device-frame" id="mobileDeviceFrame" style="display: none;">
+        <div class="phone-frame">
+          <div class="phone-notch"></div>
+          <div class="phone-screen" id="mobilePhoneViewport">
+            <!-- WhatsApp Chat client mockup will render here -->
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Floating Help Button / Tips -->
+    <div class="player-tips-box">
+      <div class="tips-header">
+        <i data-lucide="help-circle"></i>
+        <span>Prototype Interaction Guide</span>
+      </div>
+      <p id="playerTipsContent">You are currently looking at the <strong>Aesthetics Admin Portal</strong>. Toggle "Mobile" in the header to chat as a patient and watch the AI respond under 1s!</p>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+{
+  "name": "BassirAI - WhatsApp Inbound Responder with Pinecone RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "options": {}
+      },
+      "id": "1d8cf6a2-63b7-4c3e-8fa9-8263cf8170aa",
+      "name": "Webhook Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT c.id AS clinic_id, c.name AS clinic_name, c.ai_mode, c.tone_of_voice, cc.catalog, cc.faqs, cc.custom_prompt, cc.pinecone_namespace FROM clinics c LEFT JOIN clinic_customizations cc ON c.id = cc.clinic_id WHERE c.whatsapp_number = '{{ $json.body.entry[0].changes[0].value.metadata.display_phone_number }}'"
+      },
+      "id": "2e9cf7b3-74c8-5d4f-9fb0-9374df9281bb",
+      "name": "Resolve Clinic Meta",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        300,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ai_mode }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "3f0da8c4-85d9-6e50-afc1-0485ea0392cc",
+      "name": "Check AI Mode",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        500,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "pineconeIndex": "bassirai-index",
+        "operation": "query",
+        "namespace": "={{ $node[\"Resolve Clinic Meta\"].json.pinecone_namespace }}",
+        "query": "={{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].text.body }}",
+        "topK": 3
+      },
+      "id": "4a1eb9d5-96ea-7f61-bfd2-1596fb1403dd",
+      "name": "Query Pinecone Context",
+      "type": "n8n-nodes-base.pinecone",
+      "typeVersion": 1,
+      "position": [
+        700,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/* Compile RAG Context & Catalog into Groq Prompt */\nconst clinic = items[0].json.clinic || {};\nconst chunks = items[0].json.chunks || [];\nconst message = items[0].json.message || '';\n\nconst compiledPrompt = `\n${clinic.custom_prompt}\n\n## Clinic Pricing Catalog:\n${JSON.stringify(clinic.catalog)}\n\n## FAQ Quick Guides:\n${JSON.stringify(clinic.faqs)}\n\n## Retreived RAG Knowledge:\n${chunks.map(c => c.pageContent).join('\\n---\\n')}\n\nPatient Query: ${message}\nResponse:\n`;\n\nreturn [{ json: { prompt: compiledPrompt } }];"
+      },
+      "id": "5b2fc0e6-a7fb-8f72-c0e3-2607fc2514ee",
+      "name": "Compile RAG Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        900,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openapi/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.3-70b-versatile"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"system\", \"content\": \"{{ $json.prompt }}\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6c3fd1f7-b8fc-9f83-d1f4-3718fd3625ff",
+      "name": "Query Groq API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1100,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $node[\"Resolve Clinic Meta\"].json.display_phone_number }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].from }}"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"{{ $json.choices[0].message.content }}\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7d4fe2a8-c9fd-0f94-e2a5-4829fe4736aa",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1300,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO appointments (clinic_id, patient_name, patient_phone, procedure, appointment_date, status, notes) VALUES ('{{ $node[\"Resolve Clinic Meta\"].json.clinic_id }}', '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.contacts[0].profile.name }}', '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].from }}', 'TBD', NOW(), 'pending', 'Handoff alert: AI is offline or patient requested human.')"
+      },
+      "id": "8e5af3b9-dafe-1f05-f3b6-593afe5847bb",
+      "name": "Log Handoff Task",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        700,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "Resolve Clinic Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Clinic Meta": {
+      "main": [
+        [
+          {
+            "node": "Check AI Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check AI Mode": {
+      "main": [
+        [
+          {
+            "node": "Query Pinecone Context",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Handoff Task",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Pinecone Context": {
+      "main": [
+        [
+          {
+            "node": "Compile RAG Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile RAG Prompt": {
+      "main": [
+        [
+          {
+            "node": "Query Groq API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Groq API": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}

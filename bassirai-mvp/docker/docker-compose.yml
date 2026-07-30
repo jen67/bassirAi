@@ -1,0 +1,53 @@
+# docker-compose.yml
+# Self-hosted development environments for n8n automation and local Postgres fallback
+
+version: '3.8'
+
+services:
+  # 1. Local Database (PostgresFallback / Testing)
+  postgres:
+    image: postgres:15-alpine
+    container_name: bassirai_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgrespass}
+      POSTGRES_DB: ${DB_NAME:-bassirai_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ../database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ../database/seed.sql:/docker-entrypoint-initdb.d/2-seed.sql
+
+  # 2. Self-hosted n8n workflow engine
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: bassirai_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${DB_NAME:-bassirai_dev}
+      - DB_POSTGRESDB_USER=${DB_USER:-postgres}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASSWORD:-postgrespass}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:-bassirai_n8n_secure_key_991823}
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://${N8N_HOST:-localhost}:5678/
+      # External Integration keys passed through to workflow environments
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+    depends_on:
+      - postgres
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  pgdata:
+  n8n_data:

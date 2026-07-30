@@ -1,0 +1,158 @@
+{
+  "name": "BassirAI - Multi-tenant RAG Document Loader (Google Drive -> Pinecone)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "event": "fileCreatedOrUpdated",
+        "folderId": "={{ $json.google_drive_folder_id || 'root' }}",
+        "options": {}
+      },
+      "id": "1d8bf6a2-63b7-4c3e-8fa9-8263cf8170c0",
+      "name": "Google Drive Trigger",
+      "type": "n8n-nodes-base.googleDriveTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": "={{ $json.id }}",
+        "options": {}
+      },
+      "id": "2e9cf7b3-74c8-5d4f-9fb0-9374df9281d1",
+      "name": "Download Drive File",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 2,
+      "position": [
+        400,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3f0da8c4-85d9-6e50-afc1-0485ea0392e2",
+      "name": "Default Data Loader",
+      "type": "n8n-nodes-base.defaultDataLoader",
+      "typeVersion": 1,
+      "position": [
+        600,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "chunkSize": 500,
+        "chunkOverlap": 50,
+        "options": {}
+      },
+      "id": "4a1eb9d5-96ea-7f61-bfd2-1596fb1403f3",
+      "name": "Recursive Character Text Splitter",
+      "type": "n8n-nodes-base.recursiveCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        800,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "model": "text-embedding-ada-002",
+        "options": {}
+      },
+      "id": "5b2fc0e6-a7fb-8f72-c0e3-2607fc2514f4",
+      "name": "OpenAI Embeddings",
+      "type": "n8n-nodes-base.openAiEmbeddings",
+      "typeVersion": 1,
+      "position": [
+        950,
+        600
+      ]
+    },
+    {
+      "parameters": {
+        "pineconeIndex": "bassirai-index",
+        "namespace": "={{ $node[\"Google Drive Trigger\"].json.pinecone_namespace }}",
+        "options": {
+          "metadata": "={ \"source\": \"google-drive\", \"fileId\": \"{{ $node[\"Google Drive Trigger\"].json.id }}\" }"
+        }
+      },
+      "id": "6c3fd1f7-b8fc-9f83-d1f4-3718fd3625f5",
+      "name": "Pinecone Vector Store (Upsert)",
+      "type": "n8n-nodes-base.pinecone",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        300
+      ],
+      "connections": {
+        "ai_embedding": [
+          [
+            {
+              "node": "OpenAI Embeddings",
+              "type": "ai_embedding",
+              "index": 0
+            }
+          ]
+        ],
+        "ai_document": [
+          [
+            {
+              "node": "Default Data Loader",
+              "type": "ai_document",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    }
+  ],
+  "connections": {
+    "Google Drive Trigger": {
+      "main": [
+        [
+          {
+            "node": "Download Drive File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Drive File": {
+      "main": [
+        [
+          {
+            "node": "Default Data Loader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "main": [
+        [
+          {
+            "node": "Pinecone Vector Store (Upsert)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}
