@@ -8,8 +8,9 @@ export default function DashboardPage() {
   const supabase = createClient()
 
   const handleSignOut = async () => {
-    // Clear mock session cookie
+    // Clear mock session and onboarding cookies
     document.cookie = "sb-mock-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
+    document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
     
     // Clear Supabase session
     await supabase.auth.signOut()

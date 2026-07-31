@@ -61,9 +61,25 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
-  if (url.pathname === '/login' && user) {
-    url.pathname = '/dashboard'
-    return NextResponse.redirect(url)
+  if (user) {
+    const isOnboarded = 
+      request.cookies.get('sb-onboarded')?.value === 'true' || 
+      request.cookies.get('sb-mock-onboarded')?.value === 'true';
+
+    if (!isOnboarded && url.pathname !== '/dashboard/onboarding') {
+      url.pathname = '/dashboard/onboarding'
+      return NextResponse.redirect(url)
+    }
+
+    if (isOnboarded && url.pathname === '/dashboard/onboarding') {
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+
+    if (url.pathname === '/login') {
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
   }
 
   return supabaseResponse
