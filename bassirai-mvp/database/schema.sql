@@ -60,6 +60,7 @@ CREATE TABLE conversations (
     patient_name TEXT,
     channel msg_channel NOT NULL,
     status conv_status DEFAULT 'new',
+    is_human_takeover BOOLEAN DEFAULT FALSE,
     last_message_at TIMESTAMPTZ DEFAULT NOW(),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (clinic_id, patient_phone, channel)
