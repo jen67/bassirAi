@@ -27,10 +27,25 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Refresh session if needed
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // Check if we are running with placeholders (local mock demo)
+  const isPlaceholder = 
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
+    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+
+  let user = null;
+
+  if (isPlaceholder && request.cookies.get('sb-mock-session')?.value === 'true') {
+    user = { id: 'mock-user-id', email: 'benson@zuri.clinic' };
+  } else {
+    try {
+      const {
+        data: { user: supabaseUser },
+      } = await supabase.auth.getUser()
+      user = supabaseUser;
+    } catch {
+      // Ignore connection failures on placeholders
+    }
+  }
 
   const url = request.nextUrl.clone()
 
