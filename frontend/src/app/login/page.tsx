@@ -23,6 +23,23 @@ export default function LoginPage() {
     setErrorMsg('')
     setSuccessMsg('')
 
+    const isPlaceholder = 
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+
+    if (isPlaceholder) {
+      // Mock Bypass for local developer testing when using placeholder keys
+      if (email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin') {
+        document.cookie = "sb-mock-session=true; path=/; max-age=86400"
+        router.refresh()
+        router.push('/dashboard')
+        return
+      }
+      setErrorMsg('Supabase connection failed (using placeholder URLs). Please set your actual Supabase keys in .env. (Tip: Enter "benson@zuri.clinic" to bypass this and view the mock dashboard).')
+      setLoading(false)
+      return
+    }
+
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -30,6 +47,14 @@ export default function LoginPage() {
       })
 
       if (error) {
+        if (error.message?.includes('fetch') || error.message?.includes('TypeError')) {
+          if (email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin') {
+            document.cookie = "sb-mock-session=true; path=/; max-age=86400"
+            router.refresh()
+            router.push('/dashboard')
+            return
+          }
+        }
         setErrorMsg(error.message)
         setLoading(false)
       } else {
@@ -37,22 +62,7 @@ export default function LoginPage() {
         router.push('/dashboard')
       }
     } catch (err: any) {
-      const isPlaceholder = 
-        process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
-        process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
-
-      if (isPlaceholder || err.name === 'TypeError' || err.message?.includes('fetch')) {
-        // Mock Bypass for local developer testing when using placeholder keys
-        if (email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin') {
-          document.cookie = "sb-mock-session=true; path=/; max-age=86400"
-          router.refresh()
-          router.push('/dashboard')
-          return
-        }
-        setErrorMsg('Supabase connection failed (using placeholder URLs). Please set your actual Supabase keys in .env. (Tip: Enter "benson@zuri.clinic" to bypass this and view the mock dashboard).')
-      } else {
-        setErrorMsg(err.message || 'An error occurred during sign in.')
-      }
+      setErrorMsg(err.message || 'An error occurred during sign in.')
       setLoading(false)
     }
   }
@@ -65,6 +75,16 @@ export default function LoginPage() {
 
     if (!clinicName || !fullName) {
       setErrorMsg('Please fill in all registration fields.')
+      setLoading(false)
+      return
+    }
+
+    const isPlaceholder = 
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
+      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
+
+    if (isPlaceholder) {
+      setSuccessMsg('Registration mock successful! (Supabase is in placeholder mode, so no live DB entry was created. You can now switch to the Sign In tab and enter "benson@zuri.clinic" to log in).')
       setLoading(false)
       return
     }
