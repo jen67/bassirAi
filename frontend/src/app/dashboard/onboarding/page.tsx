@@ -139,7 +139,9 @@ export default function OnboardingPage() {
       calComApiKey
     }
 
-    if (isPlaceholder) {
+    const isMock = isPlaceholder || (typeof document !== 'undefined' && document.cookie.includes('sb-mock-session=true'));
+
+    if (isMock) {
       // Mock save to localStorage
       localStorage.setItem('zuri_onboarding_state', JSON.stringify(payload))
       document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400"
@@ -166,6 +168,9 @@ export default function OnboardingPage() {
         const data = await response.json()
         throw new Error(data.error || 'Failed to save onboarding metadata')
       }
+
+      // Write live onboarded cookie
+      document.cookie = "sb-onboarded=true; path=/; max-age=86400"
 
       router.refresh()
       router.push('/dashboard')
