@@ -73,7 +73,7 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    if (url.pathname === '/login') {
+    if (url.pathname === '/login' || url.pathname === '/') {
       url.pathname = '/dashboard'
       return NextResponse.redirect(url)
     }
