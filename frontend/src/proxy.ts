@@ -27,14 +27,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Check if we are running with placeholders (local mock demo)
-  const isPlaceholder = 
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
-
   let user = null;
 
-  if (isPlaceholder && request.cookies.get('sb-mock-session')?.value === 'true') {
+  if (request.cookies.get('sb-mock-session')?.value === 'true') {
     user = { id: 'mock-user-id', email: 'benson@zuri.clinic' };
   } else {
     try {

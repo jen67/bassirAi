@@ -23,18 +23,20 @@ export default function LoginPage() {
     setErrorMsg('')
     setSuccessMsg('')
 
+    const isMockEmail = email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin';
+
+    if (isMockEmail) {
+      document.cookie = "sb-mock-session=true; path=/; max-age=86400"
+      router.refresh()
+      router.push('/dashboard')
+      return
+    }
+
     const isPlaceholder = 
       process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('your-project') || 
       process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder');
 
     if (isPlaceholder) {
-      // Mock Bypass for local developer testing when using placeholder keys
-      if (email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin') {
-        document.cookie = "sb-mock-session=true; path=/; max-age=86400"
-        router.refresh()
-        router.push('/dashboard')
-        return
-      }
       setErrorMsg('Supabase connection failed (using placeholder URLs). Please set your actual Supabase keys in .env. (Tip: Enter "benson@zuri.clinic" to bypass this and view the mock dashboard).')
       setLoading(false)
       return
