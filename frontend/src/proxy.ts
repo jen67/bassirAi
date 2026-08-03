@@ -66,14 +66,16 @@ export async function proxy(request: NextRequest) {
       request.cookies.get('sb-onboarded')?.value === 'true' || 
       request.cookies.get('sb-mock-onboarded')?.value === 'true';
 
-    if (!isOnboarded && url.pathname !== '/dashboard/onboarding') {
-      url.pathname = '/dashboard/onboarding'
-      return NextResponse.redirect(url)
-    }
+    if (isProtectedRoute) {
+      if (!isOnboarded && url.pathname !== '/dashboard/onboarding') {
+        url.pathname = '/dashboard/onboarding'
+        return NextResponse.redirect(url)
+      }
 
-    if (isOnboarded && url.pathname === '/dashboard/onboarding') {
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      if (isOnboarded && url.pathname === '/dashboard/onboarding') {
+        url.pathname = '/dashboard'
+        return NextResponse.redirect(url)
+      }
     }
 
     if (url.pathname === '/login') {
