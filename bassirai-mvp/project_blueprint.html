@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BassirAI Project Architecture & Security Blueprint</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --primary: #D4AF37;
+      --primary-dark: #B3922E;
+      --bg: #090D16;
+      --card-bg: #111827;
+      --text: #F3F4F6;
+      --text-muted: #9CA3AF;
+      --border: #1F2937;
+      --success: #34D399;
+      --warning: #F59E0B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 3rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* Print styling optimizations */
+    @media print {
+      body {
+        background-color: #FFFFFF;
+        color: #111827;
+        padding: 0;
+        font-size: 11pt;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .card {
+        background-color: #F9FAFB !important;
+        border: 1px solid #E5E7EB !important;
+        color: #111827 !important;
+      }
+      h1, h2, h3 {
+        color: #111827 !important;
+      }
+      .highlight-box {
+        background-color: #F3F4F6 !important;
+        border-left: 4px solid #374151 !important;
+        color: #111827 !important;
+      }
+      .badge {
+        border: 1px solid #D1D5DB !important;
+        color: #374151 !important;
+      }
+      .diagram-node {
+        background-color: #E5E7EB !important;
+        border: 1px solid #9CA3AF !important;
+        color: #111827 !important;
+      }
+      .line {
+        border-color: #9CA3AF !important;
+      }
+    }
+
+    header {
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 2rem;
+      margin-bottom: 3rem;
+      text-align: center;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary), #F59E0B);
+      border-radius: 16px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #090D16;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 15px -3px rgba(212, 175, 55, 0.2);
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      font-weight: 400;
+    }
+
+    h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-top: 2.5rem;
+      margin-bottom: 1.2rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+    }
+
+    h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-top: 1.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    p {
+      margin-bottom: 1.2rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    ul, ol {
+      margin-left: 1.5rem;
+      margin-bottom: 1.5rem;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    .highlight-box {
+      border-left: 4px solid var(--primary);
+      background-color: rgba(212, 175, 55, 0.05);
+      padding: 1.2rem;
+      border-radius: 0 12px 12px 0;
+      margin: 1.5rem 0;
+    }
+
+    .highlight-box h4 {
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .highlight-box p {
+      margin-bottom: 0;
+      color: var(--text);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+      margin-right: 0.5rem;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--primary);
+      background-color: rgba(212, 175, 55, 0.05);
+    }
+
+    /* Diagram Styles */
+    .diagram-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      margin: 2.5rem 0;
+      padding: 1.5rem;
+      background-color: rgba(17, 24, 39, 0.5);
+      border: 1px dashed var(--border);
+      border-radius: 16px;
+    }
+
+    .diagram-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 2rem;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .diagram-node {
+      padding: 0.8rem 1.2rem;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      min-width: 150px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .diagram-node.active {
+      border-color: var(--primary);
+      color: var(--primary);
+      background-color: rgba(212, 175, 55, 0.02);
+    }
+
+    .line {
+      height: 2px;
+      background-color: var(--border);
+      flex: 1;
+      min-width: 30px;
+      position: relative;
+    }
+
+    code {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: rgba(255, 255, 255, 0.05);
+      padding: 0.1rem 0.3rem;
+      border-radius: 4px;
+      font-size: 0.85em;
+      color: #F59E0B;
+    }
+
+    pre {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #06090F;
+      padding: 1.2rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: #34D399;
+      font-size: 0.85rem;
+    }
+
+    footer {
+      margin-top: 5rem;
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .btn-print {
+      display: inline-block;
+      margin-bottom: 2rem;
+      background: linear-gradient(135deg, var(--primary), #F59E0B);
+      color: #090D16;
+      border: none;
+      padding: 0.8rem 1.8rem;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      box-shadow: 0 4px 14px 0 rgba(212, 175, 55, 0.3);
+      transition: all 0.2s ease-in-out;
+    }
+
+    .btn-print:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px 0 rgba(212, 175, 55, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div style="text-align: right;" class="no-print">
+    <button class="btn-print" onclick="window.print()">Print Blueprint / Save as PDF</button>
+  </div>
+
+  <header>
+    <div class="logo-container">B</div>
+    <h1>BassirAI Project Architecture & Security Blueprint</h1>
+    <div class="subtitle">System Architecture, Authentication, and Security Controls</div>
+  </header>
+
+  <section>
+    <h2>1. System Architecture Overview</h2>
+    <p>BassirAI is structured as a modular, multi-tenant SaaS application that isolates administrative control interfaces from the background AI automation pipelines.</p>
+    
+    <div class="diagram-container">
+      <div class="diagram-row">
+        <div class="diagram-node active">Clinic Administrator / Staff</div>
+        <div class="line"></div>
+        <div class="diagram-node">Next.js 16 Web Portal</div>
+        <div class="line"></div>
+        <div class="diagram-node">Supabase Database / Auth</div>
+      </div>
+      
+      <div class="diagram-row" style="margin-top: 1rem;">
+        <div class="diagram-node active">Patient (WhatsApp API)</div>
+        <div class="line"></div>
+        <div class="diagram-node">n8n Automation Engine</div>
+        <div class="line"></div>
+        <div class="diagram-node">Pinecone RAG Namespace</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Core Core Architecture Modules</h3>
+      <ul>
+        <li><strong>Next.js 16 (App Router / Turbopack)</strong>: Serves as the management dashboard. All page structures utilize asynchronous server-side components to retrieve parameters, with high-fidelity glassmorphic clients for interactive tabs.</li>
+        <li><strong>Supabase (PostgreSQL & Go-Auth)</strong>: Manages authentication records, rows configuration schemas, clinics metadata, catalog prices, FAQs lists, and message tracking tables.</li>
+        <li><strong>n8n Workflow Automation</strong>: Configured as the core communication webhook responder. Resolves inbound WhatsApp requests, checks auto-responder flags, queries RAG databases, and dispatches messages.</li>
+        <li><strong>Pinecone Vector DB</strong>: Stores text embeddings representing clinic document knowledge folders. Every tenant is strictly isolated by matching searches to their specific <code>pinecone_namespace</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page-break">
+    <h2>2. Authentication Flow (Supabase SSR Cookie Auth)</h2>
+    <p>To avoid client-side token vulnerabilities (XSS), BassirAI implements secure server-side session tracking via browser cookies.</p>
+
+    <div class="highlight-box">
+      <h4>Security Design</h4>
+      <p>Instead of standard sessionStorage, Supabase session tokens are saved as HTTP cookies. A custom Next.js 16 edge proxy middleware intercepts browser requests and authorizes route access before page components are compiled.</p>
+    </div>
+
+    <h3>Implementation Client Wrappers:</h3>
+    <ul>
+      <li><strong>Browser Client (<code>client.ts</code>)</strong>: Used for interactive form actions such as triggering credentials verification upon submission.</li>
+      <li><strong>Server Client (<code>server.ts</code>)</strong>: Handles server components. Utilizes async cookie stores to dynamically synchronize token states.</li>
+      <li><strong>Admin Client (<code>admin.ts</code>)</strong>: Created using the secure service role key to perform database actions bypass checks (e.g. provisioning profile link inserts during signup).</li>
+    </ul>
+  </section>
+
+  <section class="page-break">
+    <h2>3. Row-Level Security (RLS) & Security Definer</h2>
+    <p>Row-Level Security (RLS) is enabled on all tables in PostgreSQL. No database query can fetch or modify rows belonging to a different clinic.</p>
+
+    <div class="highlight-box">
+      <h4>The Recursion Challenge</h4>
+      <p>Checking RLS user clinic IDs directly in a SELECT policy on the <code>users</code> table causes infinite loop execution errors. We resolved this by creating a lookup function running with database owner privileges (<code>SECURITY DEFINER</code>), bypassing RLS logic:</p>
+    </div>
+
+    <pre><code>CREATE OR REPLACE FUNCTION get_user_clinic_id()
+RETURNS UUID AS $$
+BEGIN
+    RETURN (SELECT clinic_id FROM users WHERE id = auth.uid());
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;</code></pre>
+
+    <h3>Table Security Policies:</h3>
+    <ul>
+      <li><strong>clinics</strong>: <code>id = get_user_clinic_id()</code></li>
+      <li><strong>users</strong>: <code>clinic_id = get_user_clinic_id()</code></li>
+      <li><strong>conversations</strong>: <code>clinic_id = get_user_clinic_id()</code></li>
+      <li><strong>messages</strong>: <code>clinic_id = get_user_clinic_id()</code></li>
+    </ul>
+  </section>
+
+  <section class="page-break">
+    <h2>4. Multi-Tenant RAG Schema & Language Translation</h2>
+    <p>The backend and n8n layers are engineered to seamlessly scale with dynamic translation tools (such as the English/Arabic classifier your teammate is building).</p>
+
+    <div class="card">
+      <h3>Translation Integration Guide</h3>
+      <ul>
+        <li><strong>Document Ingestion</strong>: Google Drive documents crawled via n8n split and embedding nodes are pushed strictly to a unique clinic namespace parameter.</li>
+        <li><strong>Dynamic Webhook Resolution</strong>: The incoming WhatsApp text triggers the translator node. It determines if the patient prefers English or Arabic, retrieves the clinic customizations (e.g. FAQ Naira price tables) from Supabase, compiles system prompt templates, translates them, and feeds the localized parameters to the Llama model.</li>
+        <li><strong>Takeover Gates</strong>: A boolean <code>is_human_takeover</code> flag exists in the database. The n8n automation webhook queries this before generating replies; if true, the AI responder remains silent to allow manual receptionist callback followups.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2026 BassirAI - Premium Multi-Tenant Medical Communication blueprints. All rights reserved.</p>
+  </footer>
+
+</body>
+</html>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
 
@@ -13,10 +13,26 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = usePathname()
   const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [userName, setUserName] = useState('Babajide Benson')
+  const [userRole, setUserRole] = useState('Clinic Admin')
+
+  useEffect(() => {
+    const cookies = document.cookie.split('; ')
+    const nameCookie = cookies.find(row => row.startsWith('sb-mock-user-name='))
+    const roleCookie = cookies.find(row => row.startsWith('sb-mock-user-role='))
+    if (nameCookie) {
+      setUserName(decodeURIComponent(nameCookie.split('=')[1]))
+    }
+    if (roleCookie) {
+      setUserRole(decodeURIComponent(roleCookie.split('=')[1]))
+    }
+  }, [])
 
   const handleSignOut = async () => {
     document.cookie = "sb-mock-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
     document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
+    document.cookie = "sb-mock-user-name=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
+    document.cookie = "sb-mock-user-role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
     await supabase.auth.signOut()
     router.refresh()
     router.push('/login')
@@ -118,11 +134,11 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         <div className="border-t border-slate-850 pt-5 mt-auto">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-[#D4AF37]">
-              BB
+              {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'US'}
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-200">Babajide Benson</p>
-              <p className="text-[10px] text-slate-500">Clinic Admin</p>
+              <p className="text-xs font-bold text-slate-200">{userName}</p>
+              <p className="text-[10px] text-slate-500">{userRole}</p>
             </div>
           </div>
           <button

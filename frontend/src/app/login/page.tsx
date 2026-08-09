@@ -26,7 +26,26 @@ export default function LoginPage() {
     const isMockEmail = email.endsWith('@zuri.clinic') || email === 'admin@test.com' || email === 'admin';
 
     if (isMockEmail) {
+      let displayName = 'Babajide Benson';
+      let roleName = 'Clinic Admin';
+      
+      const cleanEmail = email.toLowerCase().trim();
+      if (cleanEmail.startsWith('adams') || cleanEmail.startsWith('temi')) {
+        displayName = 'Temiloluwa Adams';
+        roleName = 'Receptionist';
+      } else if (cleanEmail.includes('benson') || cleanEmail.includes('hello')) {
+        displayName = 'Babajide Benson';
+        roleName = 'Clinic Admin';
+      } else {
+        const prefix = cleanEmail.split('@')[0];
+        displayName = prefix.charAt(0).toUpperCase() + prefix.slice(1);
+        roleName = 'Staff';
+      }
+
       document.cookie = "sb-mock-session=true; path=/; max-age=86400"
+      document.cookie = `sb-mock-user-name=${encodeURIComponent(displayName)}; path=/; max-age=86400`
+      document.cookie = `sb-mock-user-role=${encodeURIComponent(roleName)}; path=/; max-age=86400`
+
       router.refresh()
       router.push('/dashboard')
       return
