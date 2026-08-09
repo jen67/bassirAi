@@ -1,10 +1,21 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import SidebarLayout from '@/components/SidebarLayout'
 import { useRouter } from 'next/navigation'
 
 export default function DashboardPage() {
   const router = useRouter()
+  const [firstName, setFirstName] = useState('Babajide')
+
+  useEffect(() => {
+    const cookies = document.cookie.split('; ')
+    const mockNameCookie = cookies.find(row => row.startsWith('sb-mock-user-name='))
+    if (mockNameCookie) {
+      const fullName = decodeURIComponent(mockNameCookie.split('=')[1])
+      setFirstName(fullName.split(' ')[0])
+    }
+  }, [])
 
   const stats = [
     {
@@ -63,7 +74,7 @@ export default function DashboardPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-              Welcome back, Babajide
+              Welcome back, {firstName}
             </h1>
             <p className="text-slate-400 text-xs mt-1">
               Here is what is happening at **Zuri Aesthetic & Wellness Clinic** (Lekki, Lagos).
