@@ -110,7 +110,7 @@ export default function InboxPage() {
 
   return (
     <SidebarLayout>
-      <div className="h-[calc(100vh-130px)] flex flex-col md:flex-row gap-6">
+      <div className="h-[calc(100vh-50px)] flex flex-col md:flex-row gap-6">
         
         {/* Left Column: Threads list */}
         <div className="w-full md:w-80 bg-slate-900/40 border border-slate-900/60 rounded-2xl flex flex-col overflow-hidden shrink-0">

@@ -170,7 +170,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
       )}
 
       {/* Main Workspace Frame */}
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto max-h-screen z-10 w-full">
+      <main className="flex-1 px-6 pt-6 md:px-8 md:pt-8 overflow-y-auto max-h-screen z-10 w-full">
         {children}
       </main>
     </div>
