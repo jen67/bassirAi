@@ -55,8 +55,58 @@ export default function InboxPage() {
 
   const [activeThreadId, setActiveThreadId] = useState('chioma')
   const [inputText, setInputText] = useState('')
+  const [showSimMenu, setShowSimMenu] = useState(false)
 
   const activeThread = threads.find(t => t.id === activeThreadId) || threads[0]
+
+  // Simulate Inbound Message from patient
+  const simulateInbound = (text: string, isArabic = false) => {
+    const incomingMsg: Message = {
+      sender: 'patient',
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+
+    setThreads(prev => prev.map(t => {
+      if (t.id === activeThread.id) {
+        return {
+          ...t,
+          messages: [...t.messages, incomingMsg]
+        }
+      }
+      return t
+    }))
+
+    // If AI auto-response is active, reply after 1.5 seconds
+    if (!activeThread.takeover) {
+      setTimeout(() => {
+        let aiReply = "Thank you for contacting Zuri Aesthetic! Our practitioner will contact you shortly. Would you like to schedule a callback?";
+        if (isArabic) {
+          aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
+        } else if (text.toLowerCase().includes('botox')) {
+          aiReply = "Botox treatments at Zuri Clinic range from ₦180,000 to ₦300,000. Would you like to book a consultation session?";
+        } else if (text.toLowerCase().includes('filler') || text.includes('فيلر')) {
+          aiReply = "Lip Filler (Juvederm) at Zuri Clinic is ₦450,000 - ₦600,000 per syringe. Shall I check available callback times?";
+        }
+
+        const aiMsg: Message = {
+          sender: 'ai',
+          text: aiReply,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+
+        setThreads(current => current.map(t => {
+          if (t.id === activeThread.id) {
+            return {
+              ...t,
+              messages: [...t.messages, aiMsg]
+            }
+          }
+          return t
+        }))
+      }, 1500)
+    }
+  }
 
   // Toggle Human Takeover Handler
   const toggleTakeover = async (threadId: string) => {
@@ -157,20 +207,71 @@ export default function InboxPage() {
               <p className="text-[9px] text-slate-500 font-mono mt-0.5">{activeThread.phone}</p>
             </div>
 
-            {/* Human Takeover Toggle Switch */}
-            <div className="flex items-center gap-2.5">
-              <span className="text-[10px] text-slate-400 font-bold">Human Takeover</span>
-              <button
-                type="button"
-                onClick={() => toggleTakeover(activeThread.id)}
-                className={`w-11 h-6 rounded-full p-0.5 transition-colors relative focus:outline-none ${
-                  activeThread.takeover ? 'bg-amber-500' : 'bg-slate-800'
-                }`}
-              >
-                <div className={`w-5 h-5 rounded-full bg-slate-950 transition-transform transform ${
-                  activeThread.takeover ? 'translate-x-5' : 'translate-x-0'
-                }`} />
-              </button>
+            <div className="flex items-center gap-4">
+              {/* Simulator Action dropdown */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowSimMenu(!showSimMenu)}
+                  className="bg-slate-850 hover:bg-slate-800 border border-slate-750 hover:border-[#D4AF37]/50 text-slate-300 text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                  Simulate Message
+                </button>
+
+                {showSimMenu && (
+                  <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-20 py-2 divide-y divide-slate-800">
+                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                      Simulate Patient Inbound
+                    </div>
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          simulateInbound("Hi, how much is Botox?", false);
+                          setShowSimMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                      >
+                        🇺🇸 English: "How much is Botox?"
+                      </button>
+                      <button
+                        onClick={() => {
+                          simulateInbound("مرحبا، كم سعر فيلر الشفاه؟", true);
+                          setShowSimMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                      >
+                        🇸🇦 Arabic: "مرحبا، كم سعر الفيلر؟"
+                      </button>
+                      <button
+                        onClick={() => {
+                          simulateInbound("Can I speak to a clinic receptionist please?", false);
+                          setShowSimMenu(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                      >
+                        📞 Support: "Speak to receptionist"
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Human Takeover Toggle Switch */}
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] text-slate-400 font-bold">Human Takeover</span>
+                <button
+                  type="button"
+                  onClick={() => toggleTakeover(activeThread.id)}
+                  className={`w-11 h-6 rounded-full p-0.5 transition-colors relative focus:outline-none ${
+                    activeThread.takeover ? 'bg-amber-500' : 'bg-slate-800'
+                  }`}
+                >
+                  <div className={`w-5 h-5 rounded-full bg-slate-950 transition-transform transform ${
+                    activeThread.takeover ? 'translate-x-5' : 'translate-x-0'
+                  }`} />
+                </button>
+              </div>
             </div>
           </div>
 
