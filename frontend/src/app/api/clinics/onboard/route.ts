@@ -1,66 +1,166 @@
-import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/utils/supabase/admin'
+import { NextResponse } from "next/server";
+import { createClient } from "@/utils/supabase/server";
 
+/**
+ * POST /api/clinics/onboard
+ *
+ * Updates clinic settings including:
+ * - Basic clinic info (name, AI tone, language)
+ * - Catalog (treatments & prices)
+ * - FAQs
+ * - WhatsApp credentials
+ * - Booking strategy
+ *
+ * This endpoint updates BOTH the clinics table AND clinic_customizations table.
+ */
 export async function POST(request: Request) {
   try {
+    const payload = await request.json();
     const {
       userId,
       clinicName,
       aiTone,
+      primaryLang,
+      waPhoneId,
       catalog,
       faqs,
       bookingStrategy,
-      calComUrl,
-    } = await request.json()
+    } = payload;
 
-    if (!userId || !clinicName) {
-      return NextResponse.json({ error: 'Missing clinic onboarding parameters' }, { status: 400 })
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Missing userId parameter" },
+        { status: 400 },
+      );
     }
 
-    const supabase = createAdminClient()
-
-    // 1. Resolve clinic_id from users table
-    const { data: userRecord, error: userErr } = await supabase
-      .from('users')
-      .select('clinic_id')
-      .eq('id', userId)
-      .single()
-
-    if (userErr || !userRecord?.clinic_id) {
-      return NextResponse.json({ error: userErr?.message || 'Clinic association not found for user' }, { status: 404 })
+    // Validate UUID format
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return NextResponse.json(
+        { error: "Invalid user ID format" },
+        { status: 400 },
+      );
     }
 
-    const clinicId = userRecord.clinic_id
+    // Validate clinic name if provided
+    if (clinicName && (clinicName.length < 2 || clinicName.length > 200)) {
+      return NextResponse.json(
+        { error: "Clinic name must be between 2 and 200 characters" },
+        { status: 400 },
+      );
+    }
 
-    // 2. Update clinics table
-    const { error: clinicErr } = await supabase
-      .from('clinics')
+    // Validate tone
+    const validTones = ["professional", "friendly", "casual", "formal"];
+    if (aiTone && !validTones.includes(aiTone)) {
+      return NextResponse.json(
+        {
+          error:
+            "Invalid AI tone. Must be: professional, friendly, casual, or formal",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Validate phone format if provided
+    if (waPhoneId) {
+      const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+      if (!phoneRegex.test(waPhoneId.replace(/[\s-]/g, ""))) {
+        return NextResponse.json(
+          { error: "Invalid WhatsApp phone number format" },
+          { status: 400 },
+        );
+      }
+    }
+
+    // Validate catalog is an array if provided
+    if (catalog && !Array.isArray(catalog)) {
+      return NextResponse.json(
+        { error: "Catalog must be an array" },
+        { status: 400 },
+      );
+    }
+
+    // Validate FAQs is an array if provided
+    if (faqs && !Array.isArray(faqs)) {
+      return NextResponse.json(
+        { error: "FAQs must be an array" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+
+    // Get user's clinic_id from auth metadata or users table
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("clinic_id")
+      .eq("id", userId)
+      .single();
+
+    if (userError || !userData) {
+      return NextResponse.json(
+        { error: "User not found or not linked to a clinic" },
+        { status: 404 },
+      );
+    }
+
+    const clinicId = userData.clinic_id;
+
+    // Update clinic basic info
+    const { error: clinicError } = await supabase
+      .from("clinics")
       .update({
         name: clinicName,
         tone_of_voice: aiTone,
+        whatsapp_number: waPhoneId || null,
+        updated_at: new Date().toISOString(),
       })
-      .eq('id', clinicId)
+      .eq("id", clinicId);
 
-    if (clinicErr) {
-      return NextResponse.json({ error: clinicErr.message }, { status: 500 })
+    if (clinicError) {
+      throw clinicError;
     }
 
-    // 3. Upsert customization variables (Hybrid FAQ lists and Prompt models)
-    const { error: customErr } = await supabase
-      .from('clinic_customizations')
-      .upsert({
-        clinic_id: clinicId,
-        catalog: catalog || [],
-        faqs: faqs || [],
-        custom_prompt: `You are a helpful customer care agent representing ${clinicName}. Introduce yourself clearly. Ensure all prices are stated in Naira (₦). Encourage patients to book callback consultations.`,
-      })
+    // Upsert clinic_customizations (catalog, FAQs, etc.)
+    const { error: customError } = await supabase
+      .from("clinic_customizations")
+      .upsert(
+        {
+          clinic_id: clinicId,
+          catalog: catalog || [],
+          faqs: faqs || [],
+          custom_prompt: `You are a helpful AI assistant for ${clinicName}. 
+Tone: ${aiTone}. 
+Language: ${primaryLang}. 
+Booking strategy: ${bookingStrategy}.`,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "clinic_id",
+        },
+      );
 
-    if (customErr) {
-      return NextResponse.json({ error: customErr.message }, { status: 500 })
+    if (customError) {
+      throw customError;
     }
 
-    return NextResponse.json({ success: true })
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Server error' }, { status: 500 })
+    return NextResponse.json({
+      success: true,
+      message: "Clinic settings updated successfully",
+    });
+  } catch (err: unknown) {
+    console.error("Onboarding error:", err);
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error
+            ? err.message
+            : "Failed to update clinic settings",
+      },
+      { status: 500 },
+    );
   }
 }

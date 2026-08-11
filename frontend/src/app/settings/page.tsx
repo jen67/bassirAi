@@ -1,124 +1,141 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import SidebarLayout from '@/components/SidebarLayout'
-import { createClient } from '@/utils/supabase/client'
+import { useState, useEffect } from "react";
+import SidebarLayout from "@/components/SidebarLayout";
+import { createClient } from "@/utils/supabase/client";
 
 interface CatalogItem {
-  name: string
-  price: string
-  description: string
+  name: string;
+  price: string;
+  description: string;
 }
 
 interface FAQItem {
-  question: string
-  answer: string
+  question: string;
+  answer: string;
 }
 
 export default function SettingsPage() {
-  const supabase = createClient()
-  const [loading, setLoading] = useState(false)
-  const [errorMsg, setErrorMsg] = useState('')
-  const [successMsg, setSuccessMsg] = useState('')
+  const supabase = createClient();
+  const auth = supabase.auth;
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   // Form states
-  const [clinicName, setClinicName] = useState('Zuri Aesthetic Clinic')
-  const [aiTone, setAiTone] = useState('professional')
-  const [primaryLang, setPrimaryLang] = useState('en')
-  
-  const [waPhoneId, setWaPhoneId] = useState('')
-  const [waAccId, setWaAccId] = useState('')
-  const [waToken, setWaToken] = useState('')
+  const [clinicName, setClinicName] = useState("Zuri Aesthetic Clinic");
+  const [aiTone, setAiTone] = useState("professional");
+  const [primaryLang, setPrimaryLang] = useState("en");
 
-  const [catalog, setCatalog] = useState<CatalogItem[]>([])
-  const [faqs, setFaqs] = useState<FAQItem[]>([])
+  const [waPhoneId, setWaPhoneId] = useState("");
+  const [waAccId, setWaAccId] = useState("");
+  const [waToken, setWaToken] = useState("");
 
-  const [bookingStrategy, setBookingStrategy] = useState<'calcom' | 'callback'>('callback')
-  const [calComUrl, setCalComUrl] = useState('')
-  const [calComApiKey, setCalComApiKey] = useState('')
+  const [catalog, setCatalog] = useState<CatalogItem[]>([]);
+  const [faqs, setFaqs] = useState<FAQItem[]>([]);
 
-  const [isPlaceholder, setIsPlaceholder] = useState(true)
+  const [bookingStrategy, setBookingStrategy] = useState<"calcom" | "callback">(
+    "callback",
+  );
+  const [calComUrl, setCalComUrl] = useState("");
+  const [calComApiKey, setCalComApiKey] = useState("");
+
+  const [isPlaceholder, setIsPlaceholder] = useState(true);
 
   // Load current settings from localStorage or live API
   useEffect(() => {
     const loadSettings = async () => {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const placeholder = !!(url?.includes('your-project') || url?.includes('placeholder'))
-      setIsPlaceholder(placeholder)
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const placeholder = !!(
+        url?.includes("your-project") || url?.includes("placeholder")
+      );
+      setIsPlaceholder(placeholder);
 
       if (placeholder) {
-        const stored = localStorage.getItem('zuri_onboarding_state')
+        const stored = localStorage.getItem("zuri_onboarding_state");
         if (stored) {
           try {
-            const data = JSON.parse(stored)
-            setClinicName(data.clinicName || 'Zuri Aesthetic Clinic')
-            setAiTone(data.aiTone || 'professional')
-            setPrimaryLang(data.primaryLang || 'en')
-            setWaPhoneId(data.waPhoneId || '')
-            setWaAccId(data.waAccId || '')
-            setWaToken(data.waToken || '')
-            setCatalog(data.catalog || [])
-            setFaqs(data.faqs || [])
-            setBookingStrategy(data.bookingStrategy || 'callback')
-            setCalComUrl(data.calComUrl || '')
-            setCalComApiKey(data.calComApiKey || '')
+            const data = JSON.parse(stored);
+            setClinicName(data.clinicName || "Zuri Aesthetic Clinic");
+            setAiTone(data.aiTone || "professional");
+            setPrimaryLang(data.primaryLang || "en");
+            setWaPhoneId(data.waPhoneId || "");
+            setWaAccId(data.waAccId || "");
+            setWaToken(data.waToken || "");
+            setCatalog(data.catalog || []);
+            setFaqs(data.faqs || []);
+            setBookingStrategy(data.bookingStrategy || "callback");
+            setCalComUrl(data.calComUrl || "");
+            setCalComApiKey(data.calComApiKey || "");
           } catch (e) {
-            console.error('Failed to parse local settings', e)
+            console.error("Failed to parse local settings", e);
           }
         }
       } else {
         // Fetch from database in live mode
         try {
-          const { data: { user } } = await supabase.auth.getUser()
-          if (!user) return
+          const {
+            data: { user },
+          } = await auth.getUser();
+          if (!user) return;
 
           // Load clinic details from database
-          const response = await fetch('/api/clinics/register?userId=' + user.id)
+          const response = await fetch(
+            "/api/clinics/register?userId=" + user.id,
+          );
           if (response.ok) {
-            const data = await response.json()
-            setClinicName(data.name || '')
-            setAiTone(data.tone_of_voice || 'professional')
+            const data = await response.json();
+            setClinicName(data.name || "");
+            setAiTone(data.tone_of_voice || "professional");
             // Load customizations...
           }
         } catch (e) {
-          console.error(e)
+          console.error(e);
         }
       }
-    }
-    loadSettings()
-  }, [])
+    };
+    loadSettings();
+  }, [auth]);
 
   // Catalog update triggers
   const addCatalogRow = () => {
-    setCatalog([...catalog, { name: '', price: '₦', description: '' }])
-  }
+    setCatalog([...catalog, { name: "", price: "₦", description: "" }]);
+  };
   const removeCatalogRow = (index: number) => {
-    setCatalog(catalog.filter((_, i) => i !== index))
-  }
-  const updateCatalogItem = (index: number, field: keyof CatalogItem, value: string) => {
-    const updated = [...catalog]
-    updated[index][field] = value
-    setCatalog(updated)
-  }
+    setCatalog(catalog.filter((_, i) => i !== index));
+  };
+  const updateCatalogItem = (
+    index: number,
+    field: keyof CatalogItem,
+    value: string,
+  ) => {
+    const updated = [...catalog];
+    updated[index][field] = value;
+    setCatalog(updated);
+  };
 
   // FAQ update triggers
   const addFAQRow = () => {
-    setFaqs([...faqs, { question: '', answer: '' }])
-  }
+    setFaqs([...faqs, { question: "", answer: "" }]);
+  };
   const removeFAQRow = (index: number) => {
-    setFaqs(faqs.filter((_, i) => i !== index))
-  }
-  const updateFAQItem = (index: number, field: keyof FAQItem, value: string) => {
-    const updated = [...faqs]
-    updated[index][field] = value
-    setFaqs(updated)
-  }
+    setFaqs(faqs.filter((_, i) => i !== index));
+  };
+  const updateFAQItem = (
+    index: number,
+    field: keyof FAQItem,
+    value: string,
+  ) => {
+    const updated = [...faqs];
+    updated[index][field] = value;
+    setFaqs(updated);
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setErrorMsg('')
-    setSuccessMsg('')
+    e.preventDefault();
+    setLoading(true);
+    setErrorMsg("");
+    setSuccessMsg("");
 
     const payload = {
       clinicName,
@@ -131,47 +148,54 @@ export default function SettingsPage() {
       faqs,
       bookingStrategy,
       calComUrl,
-      calComApiKey
-    }
+      calComApiKey,
+    };
 
     if (isPlaceholder) {
-      localStorage.setItem('zuri_onboarding_state', JSON.stringify(payload))
-      setSuccessMsg('Settings saved successfully (Local Mock Mode).')
-      setLoading(false)
-      return
+      localStorage.setItem("zuri_onboarding_state", JSON.stringify(payload));
+      setSuccessMsg("Settings saved successfully (Local Mock Mode).");
+      setLoading(false);
+      return;
     }
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Unauthenticated session')
+      const {
+        data: { user },
+      } = await auth.getUser();
+      if (!user) throw new Error("Unauthenticated session");
 
-      const response = await fetch('/api/clinics/onboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await fetch("/api/clinics/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user.id, ...payload }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to update configurations')
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update configurations");
       }
 
-      setSuccessMsg('Settings updated successfully in database.')
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to save changes.')
+      setSuccessMsg("Settings updated successfully in database.");
+    } catch (err: unknown) {
+      setErrorMsg(
+        err instanceof Error ? err.message : "Failed to save changes.",
+      );
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <SidebarLayout>
-      <div className="max-w-3xl space-y-6">
+      <div id="settings-page" className="settings-page max-w-3xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-white to-slate-300 bg-clip-text text-transparent">
             System Settings
           </h1>
-          <p className="text-slate-400 text-xs mt-1">Configure your AI conversational assistant parameters, prices, and API connection nodes.</p>
+          <p className="text-slate-400 text-xs mt-1">
+            Configure your AI conversational assistant parameters, prices, and
+            API connection nodes.
+          </p>
         </div>
 
         {errorMsg && (
@@ -187,14 +211,17 @@ export default function SettingsPage() {
         )}
 
         <form onSubmit={handleSaveSettings} className="space-y-6">
-          
           {/* Section 1: Clinic Profile */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
-            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">Clinic Metadata</h3>
-            
+            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
+              Clinic Metadata
+            </h3>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1">Clinic Name</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-1">
+                  Clinic Name
+                </label>
                 <input
                   type="text"
                   value={clinicName}
@@ -203,7 +230,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1">AI Tone of Voice</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-1">
+                  AI Tone of Voice
+                </label>
                 <select
                   value={aiTone}
                   onChange={(e) => setAiTone(e.target.value)}
@@ -220,7 +249,9 @@ export default function SettingsPage() {
           {/* Section 2: Catalog list */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">Treatments Catalog</h3>
+              <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
+                Treatments Catalog
+              </h3>
               <button
                 type="button"
                 onClick={addCatalogRow}
@@ -230,29 +261,38 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-62.5 overflow-y-auto pr-1">
               {catalog.map((item, index) => (
-                <div key={index} className="flex gap-2 items-center bg-slate-950/40 p-3 border border-slate-850 rounded-xl relative group">
+                <div
+                  key={index}
+                  className="flex gap-2 items-center bg-slate-950/40 p-3 border border-slate-850 rounded-xl relative group"
+                >
                   <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2">
                     <input
                       type="text"
                       placeholder="Treatment Name"
                       value={item.name}
-                      onChange={(e) => updateCatalogItem(index, 'name', e.target.value)}
+                      onChange={(e) =>
+                        updateCatalogItem(index, "name", e.target.value)
+                      }
                       className="bg-slate-950 border border-slate-850 rounded-lg py-1.5 px-3 text-xs focus:outline-none focus:border-[#D4AF37]"
                     />
                     <input
                       type="text"
                       placeholder="Price"
                       value={item.price}
-                      onChange={(e) => updateCatalogItem(index, 'price', e.target.value)}
+                      onChange={(e) =>
+                        updateCatalogItem(index, "price", e.target.value)
+                      }
                       className="bg-slate-950 border border-slate-850 rounded-lg py-1.5 px-3 text-xs focus:outline-none focus:border-[#D4AF37]"
                     />
                     <input
                       type="text"
                       placeholder="Description"
                       value={item.description}
-                      onChange={(e) => updateCatalogItem(index, 'description', e.target.value)}
+                      onChange={(e) =>
+                        updateCatalogItem(index, "description", e.target.value)
+                      }
                       className="bg-slate-950 border border-slate-850 rounded-lg py-1.5 px-3 text-xs focus:outline-none focus:border-[#D4AF37]"
                     />
                   </div>
@@ -271,7 +311,9 @@ export default function SettingsPage() {
           {/* Section 3: FAQs */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">Frequently Asked Questions</h3>
+              <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
+                Frequently Asked Questions
+              </h3>
               <button
                 type="button"
                 onClick={addFAQRow}
@@ -281,21 +323,28 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            <div className="space-y-3 max-h-[250px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-62.5 overflow-y-auto pr-1">
               {faqs.map((faq, index) => (
-                <div key={index} className="space-y-2 bg-slate-950/40 p-3 border border-slate-850 rounded-xl relative">
+                <div
+                  key={index}
+                  className="space-y-2 bg-slate-950/40 p-3 border border-slate-850 rounded-xl relative"
+                >
                   <input
                     type="text"
                     placeholder="Question"
                     value={faq.question}
-                    onChange={(e) => updateFAQItem(index, 'question', e.target.value)}
+                    onChange={(e) =>
+                      updateFAQItem(index, "question", e.target.value)
+                    }
                     className="w-full bg-slate-950 border border-slate-850 rounded-lg py-1.5 px-3 text-xs focus:outline-none focus:border-[#D4AF37]"
                   />
                   <textarea
                     placeholder="Answer"
                     rows={2}
                     value={faq.answer}
-                    onChange={(e) => updateFAQItem(index, 'answer', e.target.value)}
+                    onChange={(e) =>
+                      updateFAQItem(index, "answer", e.target.value)
+                    }
                     className="w-full bg-slate-950 border border-slate-850 rounded-lg py-1.5 px-3 text-xs focus:outline-none focus:border-[#D4AF37] resize-none"
                   />
                   <button
@@ -312,12 +361,16 @@ export default function SettingsPage() {
 
           {/* Section 4: WhatsApp Credentials */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
-            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">WhatsApp Developer Credentials</h3>
-            
+            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
+              WhatsApp Developer Credentials
+            </h3>
+
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-1">Phone Number ID</label>
+                  <label className="block text-slate-400 text-xs font-semibold mb-1">
+                    Phone Number ID
+                  </label>
                   <input
                     type="text"
                     value={waPhoneId}
@@ -326,7 +379,9 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-1">Business Account ID</label>
+                  <label className="block text-slate-400 text-xs font-semibold mb-1">
+                    Business Account ID
+                  </label>
                   <input
                     type="text"
                     value={waAccId}
@@ -336,7 +391,9 @@ export default function SettingsPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1">Access Token</label>
+                <label className="block text-slate-400 text-xs font-semibold mb-1">
+                  Access Token
+                </label>
                 <input
                   type="password"
                   value={waToken}
@@ -352,14 +409,13 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-[#D4AF37] to-amber-500 hover:from-amber-500 hover:to-[#D4AF37] text-slate-950 text-xs font-bold py-3 px-8 rounded-lg shadow-lg shadow-[#D4AF37]/5 transition-all duration-200"
+              className="bg-linear-to-r from-[#D4AF37] to-amber-500 hover:from-amber-500 hover:to-[#D4AF37] text-slate-950 text-xs font-bold py-3 px-8 rounded-lg shadow-lg shadow-[#D4AF37]/5 transition-all duration-200"
             >
-              {loading ? 'Saving Changes...' : 'Save Settings'}
+              {loading ? "Saving Changes..." : "Save Settings"}
             </button>
           </div>
-
         </form>
       </div>
     </SidebarLayout>
-  )
+  );
 }
