@@ -289,6 +289,51 @@ export default function InboxPage() {
     }
   }
 
+  // Simulate Outbound Human Reply (Doctor/Colleague)
+  const simulateOutboundHuman = async (text: string) => {
+    // 1. Mock Mode Behavior
+    if (isMockMode) {
+      const outgoingMsg: Message = {
+        sender: 'human',
+        text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }
+
+      setThreads(prev => prev.map(t => {
+        if (t.id === activeThread.id) {
+          return {
+            ...t,
+            takeover: true,
+            messages: [...t.messages, outgoingMsg]
+          }
+        }
+        return t
+      }))
+      return
+    }
+
+    // 2. Live Database Mode Behavior
+    if (!clinicId || !activeThread.id) return
+
+    try {
+      if (!activeThread.takeover) {
+        await toggleTakeover(activeThread.id)
+      }
+
+      await supabase
+        .from('messages')
+        .insert({
+          clinic_id: clinicId,
+          conversation_id: activeThread.id,
+          content: text,
+          direction: 'outbound',
+          is_ai_generated: false
+        })
+    } catch (err) {
+      console.error('Failed to log simulated outbound doctor reply:', err)
+    }
+  }
+
   // Simulate Inbound New Patient Connection (Live Database)
   const simulateNewConversation = async () => {
     const testPhone = '+234 803 111 2222'
@@ -539,6 +584,20 @@ export default function InboxPage() {
                             className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                           >
                             📞 Support: "Speak to receptionist"
+                          </button>
+                        </div>
+                        <div className="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800">
+                          Simulate Outbound (Human)
+                        </div>
+                        <div className="py-1">
+                          <button
+                            onClick={() => {
+                              simulateOutboundHuman("Hi there! This is Dr. Benson. I've reviewed your request. Let's schedule a session for Thursday morning. Does 10:00 AM work?");
+                              setShowSimMenu(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-xs text-[#D4AF37] hover:bg-slate-800 hover:text-white transition-colors"
+                          >
+                            👨‍⚕️ Doctor: "Let's schedule session"
                           </button>
                         </div>
                       </div>
