@@ -214,11 +214,19 @@ export default function InboxPage() {
         setTimeout(() => {
           let aiReply = "Thank you for contacting Zuri Aesthetic! Our practitioner will contact you shortly. Would you like to schedule a callback?";
           if (isArabic) {
-            aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
+            if (text.includes('موقع') || text.includes('أين')) {
+              aiReply = "موقعنا في ليكي فاز 1، لاغوس. ويتوفر موقف مجاني للسيارات أمام مدخل العيادة لجميع المرضى!";
+            } else {
+              aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
+            }
           } else if (text.toLowerCase().includes('botox')) {
             aiReply = "Botox treatments at Zuri Clinic range from ₦180,000 to ₦300,000. Would you like to book a consultation session?";
           } else if (text.toLowerCase().includes('filler') || text.includes('فيلر')) {
             aiReply = "Lip Filler (Juvederm) at Zuri Clinic is ₦450,000 - ₦600,000 per syringe. Shall I check available callback times?";
+          } else if (text.toLowerCase().includes('located') || text.toLowerCase().includes('location') || text.toLowerCase().includes('where')) {
+            aiReply = "We are located in Lekki Phase 1, Lagos. We provide free parking validation right in front of the clinic entrance for all patients!";
+          } else if (text.toLowerCase().includes('laser') || text.toLowerCase().includes('resurfacing')) {
+            aiReply = "Zuri Clinic offers advanced Laser Skin Resurfacing starting from ₦250,000 per session. Would you like to schedule a consultation with our dermatologist?";
           }
 
           const aiMsg: Message = {
@@ -263,11 +271,19 @@ export default function InboxPage() {
         setTimeout(async () => {
           let aiReply = "Thank you for contacting Zuri Aesthetic! Our practitioner will contact you shortly. Would you like to schedule a callback?";
           if (isArabic) {
-            aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
+            if (text.includes('موقع') || text.includes('أين')) {
+              aiReply = "موقعنا في ليكي فاز 1، لاغوس. ويتوفر موقف مجاني للسيارات أمام مدخل العيادة لجميع المرضى!";
+            } else {
+              aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
+            }
           } else if (text.toLowerCase().includes('botox')) {
             aiReply = "Botox treatments at Zuri Clinic range from ₦180,000 to ₦300,000. Would you like to book a consultation session?";
           } else if (text.toLowerCase().includes('filler') || text.includes('فيلر')) {
             aiReply = "Lip Filler (Juvederm) at Zuri Clinic is ₦450,000 - ₦600,000 per syringe. Shall I check available callback times?";
+          } else if (text.toLowerCase().includes('located') || text.toLowerCase().includes('location') || text.toLowerCase().includes('where')) {
+            aiReply = "We are located in Lekki Phase 1, Lagos. We provide free parking validation right in front of the clinic entrance for all patients!";
+          } else if (text.toLowerCase().includes('laser') || text.toLowerCase().includes('resurfacing')) {
+            aiReply = "Zuri Clinic offers advanced Laser Skin Resurfacing starting from ₦250,000 per session. Would you like to schedule a consultation with our dermatologist?";
           }
 
           await supabase.from('messages').insert({
@@ -289,7 +305,7 @@ export default function InboxPage() {
     }
   }
 
-  // Simulate Outbound Human Reply (Doctor/Colleague)
+  // Simulate Outbound Human Reply (Doctor/Colleague) with Auto Patient Confirmation
   const simulateOutboundHuman = async (text: string) => {
     // 1. Mock Mode Behavior
     if (isMockMode) {
@@ -309,6 +325,24 @@ export default function InboxPage() {
         }
         return t
       }))
+
+      // Auto Patient Confirmation Reply
+      setTimeout(() => {
+        const confirmMsg: Message = {
+          sender: 'patient',
+          text: "Yes, Thursday at 10:00 AM works perfectly for me! See you then. Thank you!",
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+        setThreads(prev => prev.map(t => {
+          if (t.id === activeThread.id) {
+            return {
+              ...t,
+              messages: [...t.messages, confirmMsg]
+            }
+          }
+          return t
+        }))
+      }, 2000)
       return
     }
 
@@ -329,6 +363,19 @@ export default function InboxPage() {
           direction: 'outbound',
           is_ai_generated: false
         })
+
+      // Auto Patient Confirmation Insert into database
+      setTimeout(async () => {
+        await supabase
+          .from('messages')
+          .insert({
+            clinic_id: clinicId,
+            conversation_id: activeThread.id,
+            content: "Yes, Thursday at 10:00 AM works perfectly for me! See you then. Thank you!",
+            direction: 'inbound',
+            is_ai_generated: false
+          })
+      }, 2000)
     } catch (err) {
       console.error('Failed to log simulated outbound doctor reply:', err)
     }
@@ -563,27 +610,54 @@ export default function InboxPage() {
                               simulateInbound("Hi, how much is Botox?", false);
                               setShowSimMenu(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                           >
-                            🇺🇸 English: "How much is Botox?"
+                            🇺🇸 Botox Cost Inquiry
+                          </button>
+                          <button
+                            onClick={() => {
+                              simulateInbound("Do you offer skin laser treatments?", false);
+                              setShowSimMenu(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                          >
+                            🇺🇸 Laser Treatment Query
+                          </button>
+                          <button
+                            onClick={() => {
+                              simulateInbound("Where is your clinic located?", false);
+                              setShowSimMenu(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                          >
+                            🇺🇸 Location & Parking
                           </button>
                           <button
                             onClick={() => {
                               simulateInbound("مرحبا، كم سعر فيلر الشفاه؟", true);
                               setShowSimMenu(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                           >
-                            🇸🇦 Arabic: "مرحبا، كم سعر الفيلر?"
+                            🇸🇦 سعر فيلر الشفاه (عربي)
+                          </button>
+                          <button
+                            onClick={() => {
+                              simulateInbound("أين موقع العيادة؟", true);
+                              setShowSimMenu(false);
+                            }}
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                          >
+                            🇸🇦 موقع العيادة ومواقفها (عربي)
                           </button>
                           <button
                             onClick={() => {
                               simulateInbound("Can I speak to a clinic receptionist please?", false);
                               setShowSimMenu(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                            className="w-full text-left px-3 py-2 text-[11px] text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                           >
-                            📞 Support: "Speak to receptionist"
+                            📞 Request Human Escalation
                           </button>
                         </div>
                         <div className="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest border-t border-slate-800">
@@ -595,9 +669,9 @@ export default function InboxPage() {
                               simulateOutboundHuman("Hi there! This is Dr. Benson. I've reviewed your request. Let's schedule a session for Thursday morning. Does 10:00 AM work?");
                               setShowSimMenu(false);
                             }}
-                            className="w-full text-left px-3 py-2 text-xs text-[#D4AF37] hover:bg-slate-800 hover:text-white transition-colors"
+                            className="w-full text-left px-3 py-2 text-[11px] text-[#D4AF37] hover:bg-slate-800 hover:text-white transition-colors"
                           >
-                            👨‍⚕️ Doctor: "Let's schedule session"
+                            👨‍⚕️ Doctor Reply (Triggers Patient Confirmed Reply)
                           </button>
                         </div>
                       </div>
