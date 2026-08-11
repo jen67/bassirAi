@@ -266,38 +266,23 @@ export default function InboxPage() {
         return
       }
 
-      // If takeover is disabled, trigger automated AI response in database after 1.5s
+      // If takeover is disabled, trigger automated AI response API call
       if (!activeThread.takeover) {
         setTimeout(async () => {
-          let aiReply = "Thank you for contacting Zuri Aesthetic! Our practitioner will contact you shortly. Would you like to schedule a callback?";
-          if (isArabic) {
-            if (text.includes('موقع') || text.includes('أين')) {
-              aiReply = "موقعنا في ليكي فاز 1، لاغوس. ويتوفر موقف مجاني للسيارات أمام مدخل العيادة لجميع المرضى!";
-            } else {
-              aiReply = "أهلاً بك في عيادة زوري للتجميل في ليكي! سيقوم طبيبنا بالتواصل معك قريباً. هل تود حجز موعد للاتصال بك؟";
-            }
-          } else if (text.toLowerCase().includes('botox')) {
-            aiReply = "Botox treatments at Zuri Clinic range from ₦180,000 to ₦300,000. Would you like to book a consultation session?";
-          } else if (text.toLowerCase().includes('filler') || text.includes('فيلر')) {
-            aiReply = "Lip Filler (Juvederm) at Zuri Clinic is ₦450,000 - ₦600,000 per syringe. Shall I check available callback times?";
-          } else if (text.toLowerCase().includes('located') || text.toLowerCase().includes('location') || text.toLowerCase().includes('where')) {
-            aiReply = "We are located in Lekki Phase 1, Lagos. We provide free parking validation right in front of the clinic entrance for all patients!";
-          } else if (text.toLowerCase().includes('laser') || text.toLowerCase().includes('resurfacing')) {
-            aiReply = "Zuri Clinic offers advanced Laser Skin Resurfacing starting from ₦250,000 per session. Would you like to schedule a consultation with our dermatologist?";
+          try {
+            await fetch('/api/ai/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                clinicId,
+                conversationId: activeThread.id,
+                messageText: text,
+                isArabic
+              })
+            })
+          } catch (err) {
+            console.error('Failed to trigger AI generator endpoint:', err)
           }
-
-          await supabase.from('messages').insert({
-            clinic_id: clinicId,
-            conversation_id: activeThread.id,
-            content: aiReply,
-            direction: 'outbound',
-            is_ai_generated: true
-          })
-
-          await supabase
-            .from('conversations')
-            .update({ last_message_at: new Date().toISOString() })
-            .eq('id', activeThread.id)
         }, 1500)
       }
     } catch (err) {
