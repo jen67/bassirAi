@@ -84,6 +84,7 @@ export default function InboxPage() {
   const [activeThreadId, setActiveThreadId] = useState("chioma");
   const [inputText, setInputText] = useState("");
   const [showSimMenu, setShowSimMenu] = useState(false);
+  const isMockMode = true; // Toggle this to false when connecting to live n8n
 
   const activeThread =
     threads.find((t) => t.id === activeThreadId) || threads[0];
@@ -154,8 +155,11 @@ export default function InboxPage() {
     }
   };
 
-  // Toggle Human Takeover Handler
+  // Toggle Human Takeover Handler (Both Modes)
   const toggleTakeover = async (threadId: string) => {
+    const target = threads.find((t) => t.id === threadId);
+    if (!target) return;
+
     // 1. Update client state
     const updated = threads.map((t) => {
       if (t.id === threadId) {
@@ -273,57 +277,59 @@ export default function InboxPage() {
             </div>
 
             <div className="flex items-center gap-4">
-              {/* Simulator Action dropdown */}
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setShowSimMenu(!showSimMenu)}
-                  className="bg-slate-850 hover:bg-slate-800 border border-slate-750 hover:border-[#D4AF37]/50 text-slate-300 text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all"
-                >
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
-                  Simulate Message
-                </button>
+              {/* Simulator Action dropdown (Only visible in Mock Mode to keep live clean) */}
+              {isMockMode && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowSimMenu(!showSimMenu)}
+                    className="bg-slate-850 hover:bg-slate-800 border border-slate-750 hover:border-[#D4AF37]/50 text-slate-300 text-[10px] font-bold py-1.5 px-3 rounded-lg flex items-center gap-1.5 transition-all"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
+                    Simulate Message
+                  </button>
 
-                {showSimMenu && (
-                  <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-20 py-2 divide-y divide-slate-800">
-                    <div className="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                      Simulate Patient Inbound
+                  {showSimMenu && (
+                    <div className="absolute right-0 mt-2 w-64 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl z-20 py-2 divide-y divide-slate-800">
+                      <div className="px-3 py-1.5 text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                        Simulate Patient Inbound
+                      </div>
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            simulateInbound("Hi, how much is Botox?", false);
+                            setShowSimMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                        >
+                          🇺🇸 English: "How much is Botox?"
+                        </button>
+                        <button
+                          onClick={() => {
+                            simulateInbound("مرحبا، كم سعر فيلر الشفاه؟", true);
+                            setShowSimMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                        >
+                          🇸🇦 Arabic: "مرحبا، كم سعر الفيلر؟"
+                        </button>
+                        <button
+                          onClick={() => {
+                            simulateInbound(
+                              "Can I speak to a clinic receptionist please?",
+                              false,
+                            );
+                            setShowSimMenu(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
+                        >
+                          📞 Support: "Speak to receptionist"
+                        </button>
+                      </div>
                     </div>
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          simulateInbound("Hi, how much is Botox?", false);
-                          setShowSimMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                      >
-                        🇺🇸 English: &quot;How much is Botox?&quot;
-                      </button>
-                      <button
-                        onClick={() => {
-                          simulateInbound("مرحبا، كم سعر فيلر الشفاه؟", true);
-                          setShowSimMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                      >
-                        🇸🇦 Arabic: &quot;مرحبا، كم سعر الفيلر؟&quot;
-                      </button>
-                      <button
-                        onClick={() => {
-                          simulateInbound(
-                            "Can I speak to a clinic receptionist please?",
-                            false,
-                          );
-                          setShowSimMenu(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
-                      >
-                        📞 Support: &quot;Speak to receptionist&quot;
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Human Takeover Toggle Switch */}
               <div className="flex items-center gap-2.5">
@@ -405,7 +411,7 @@ export default function InboxPage() {
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               disabled={!activeThread.takeover}
-              onKeyPress={(e) => {
+              onKeyDown={(e) => {
                 if (e.key === "Enter") handleSendMessage();
               }}
               className="flex-1 bg-slate-950 border border-slate-850 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-700 focus:outline-none focus:border-[#D4AF37] disabled:opacity-50 disabled:cursor-not-allowed"

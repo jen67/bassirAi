@@ -1,0 +1,449 @@
+{
+  "name": "BassirAI - Live WhatsApp Inbound Responder with Supabase DB & RAG",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "1d8cf6a2-63b7-4c3e-8fa9-8263cf8170aa",
+      "name": "Webhook Inbound",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        100,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT c.id AS clinic_id, c.name AS clinic_name, c.ai_mode, c.tone_of_voice, cc.catalog, cc.faqs, cc.custom_prompt, cc.pinecone_namespace FROM clinics c LEFT JOIN clinic_customizations cc ON c.id = cc.clinic_id LIMIT 1"
+      },
+      "id": "2e9cf7b3-74c8-5d4f-9fb0-9374df9281bb",
+      "name": "Resolve Clinic Meta",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        300,
+        250
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=SELECT id, is_human_takeover FROM conversations WHERE clinic_id = '{{ $node[\"Resolve Clinic Meta\"].json.clinic_id }}' AND patient_phone = '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].from }}' AND channel = 'whatsapp' LIMIT 1"
+      },
+      "id": "3e9cf7b3-84c8-5d4f-afc1-0485ea0392cc",
+      "name": "Resolve Conversation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        500,
+        250
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ !!$json.id }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "4e9cf7b3-94c8-5d4f-bfd2-1596fb1403dd",
+      "name": "Conversation Exists?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        680,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO conversations (clinic_id, patient_phone, patient_name, channel, status, is_human_takeover) VALUES ('{{ $node[\"Resolve Clinic Meta\"].json.clinic_id }}', '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].from }}', '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.contacts[0].profile.name }}', 'whatsapp', 'new', false) RETURNING id, is_human_takeover"
+      },
+      "id": "5e9cf7b3-a4c8-5d4f-c0e3-2607fc2514ee",
+      "name": "Create Conversation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        850,
+        320
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO messages (clinic_id, conversation_id, content, direction, is_ai_generated) VALUES ('{{ $node[\"Resolve Clinic Meta\"].json.clinic_id }}', '{{ $node[\"Resolve Conversation\"].json.id || $node[\"Create Conversation\"].json.id }}', '{{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].text.body }}', 'inbound', false)"
+      },
+      "id": "6e9cf7b3-b4c8-5d4f-d1f4-3718fd3625ff",
+      "name": "Log Inbound Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        250
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $node[\"Resolve Conversation\"].json.is_human_takeover || $node[\"Create Conversation\"].json.is_human_takeover }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "7e9cf7b3-c4c8-5d4f-e2a5-4829fe4736aa",
+      "name": "Is Human Takeover Active?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        250
+      ]
+    },
+    {
+      "parameters": {
+        "pineconeIndex": "bassirai-index",
+        "operation": "query",
+        "namespace": "={{ $node[\"Resolve Clinic Meta\"].json.pinecone_namespace }}",
+        "query": "={{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].text.body }}",
+        "topK": 3
+      },
+      "id": "4a1eb9d5-96ea-7f61-bfd2-1596fb1403dd",
+      "name": "Query Pinecone Context",
+      "type": "n8n-nodes-base.pinecone",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "/* Compile Prompt */\nconst meta = items[0].json.meta || {};\nconst chunks = items[0].json.chunks || [];\nconst text = items[0].json.text || '';\n\nconst compiledPrompt = `\n${meta.custom_prompt}\n\n## Catalog:\n${JSON.stringify(meta.catalog)}\n\n## FAQs:\n${JSON.stringify(meta.faqs)}\n\nPatient Query: ${text}\nResponse:\n`;\n\nreturn [{ json: { prompt: compiledPrompt } }];"
+      },
+      "id": "5b2fc0e6-a7fb-8f72-c0e3-2607fc2514ee",
+      "name": "Compile Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1650,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openapi/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.GROQ_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "llama-3.3-70b-versatile"
+            },
+            {
+              "name": "messages",
+              "value": "=[{\"role\": \"system\", \"content\": \"{{ $json.prompt }}\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6c3fd1f7-b8fc-9f83-d1f4-3718fd3625ff",
+      "name": "Query Groq API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        1850,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $node[\"Resolve Clinic Meta\"].json.display_phone_number }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.WHATSAPP_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "messaging_product",
+              "value": "whatsapp"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node[\"Webhook Inbound\"].json.body.entry[0].changes[0].value.messages[0].from }}"
+            },
+            {
+              "name": "text",
+              "value": "={ \"body\": \"{{ $json.choices[0].message.content }}\" }"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "7d4fe2a8-c9fd-0f94-e2a5-4829fe4736aa",
+      "name": "Send WhatsApp Message",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        2050,
+        150
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=INSERT INTO messages (clinic_id, conversation_id, content, direction, is_ai_generated) VALUES ('{{ $node[\"Resolve Clinic Meta\"].json.clinic_id }}', '{{ $node[\"Resolve Conversation\"].json.id || $node[\"Create Conversation\"].json.id }}', '{{ $node[\"Query Groq API\"].json.choices[0].message.content }}', 'outbound', true)"
+      },
+      "id": "8e5af3b9-dafe-1f05-f3b6-593afe5847bb",
+      "name": "Log Outbound Message",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=UPDATE conversations SET last_message_at = NOW() WHERE id = '{{ $node[\"Resolve Conversation\"].json.id || $node[\"Create Conversation\"].json.id }}'"
+      },
+      "id": "9e5af3b9-dafe-1f05-f3b6-593afe5847cc",
+      "name": "Update Last Message At",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        2450,
+        150
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "live-supabase-db-credential"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "ad8cf6a2-63b7-4c3e-8fa9-8263cf8170ad",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1450,
+        350
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Inbound": {
+      "main": [
+        [
+          {
+            "node": "Resolve Clinic Meta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Clinic Meta": {
+      "main": [
+        [
+          {
+            "node": "Resolve Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Conversation": {
+      "main": [
+        [
+          {
+            "node": "Conversation Exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conversation Exists?": {
+      "main": [
+        [
+          {
+            "node": "Log Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create Conversation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Conversation": {
+      "main": [
+        [
+          {
+            "node": "Log Inbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Inbound Message": {
+      "main": [
+        [
+          {
+            "node": "Is Human Takeover Active?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Human Takeover Active?": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Query Pinecone Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Pinecone Context": {
+      "main": [
+        [
+          {
+            "node": "Compile Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compile Prompt": {
+      "main": [
+        [
+          {
+            "node": "Query Groq API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Groq API": {
+      "main": [
+        [
+          {
+            "node": "Send WhatsApp Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WhatsApp Message": {
+      "main": [
+        [
+          {
+            "node": "Log Outbound Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Outbound Message": {
+      "main": [
+        [
+          {
+            "node": "Update Last Message At",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {}
+}
