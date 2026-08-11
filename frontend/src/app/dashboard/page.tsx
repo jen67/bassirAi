@@ -2,9 +2,30 @@
 
 import SidebarLayout from "@/components/SidebarLayout";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { createClient } from "@/utils/supabase/client";
+
+interface RecentChat {
+  name: string;
+  phone: string;
+  time: string;
+  status: string;
+  badge: string;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
+  const supabase = createClient();
+  const [firstName, setFirstName] = useState("Babajide");
+  const [isMockMode, setIsMockMode] = useState(true);
+  const [loading, setLoading] = useState(true);
+
+  // Dynamic stats states
+  const [totalConvs, setTotalConvs] = useState(142);
+  const [takeoverCount, setTakeoverCount] = useState(12);
+  const [bookingCount, setBookingCount] = useState(48);
+  const [revenueValue, setRevenueValue] = useState("₦3,850,000");
+  const [recentChats, setRecentChats] = useState<RecentChat[]>([]);
 
   const getCookieValue = (key: string, fallback: string) => {
     if (typeof document === "undefined") {
@@ -16,15 +37,142 @@ export default function DashboardPage() {
     return cookie ? decodeURIComponent(cookie.split("=")[1]) : fallback;
   };
 
-  const firstName = getCookieValue("sb-mock-user-name", "Babajide").split(
-    " ",
-  )[0];
+  useEffect(() => {
+    const isMock = typeof document !== "undefined" && document.cookie.includes("sb-mock-session=true");
+    setIsMockMode(isMock);
+
+    const name = getCookieValue("sb-mock-user-name", "Babajide").split(" ")[0];
+    setFirstName(name);
+
+    if (isMock) {
+      // Load mock items
+      setTotalConvs(142);
+      setTakeoverCount(12);
+      setBookingCount(48);
+      setRevenueValue("₦3,850,000");
+      setRecentChats([
+        {
+          name: "Chioma Adebayo",
+          phone: "+234 803 111 2222",
+          time: "5m ago",
+          status: "Human Takeover",
+          badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+        },
+        {
+          name: "Kelechi Okafor",
+          phone: "+234 812 333 4444",
+          time: "20m ago",
+          status: "AI Active",
+          badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        },
+        {
+          name: "Babajide Balogun",
+          phone: "+234 905 555 6666",
+          time: "1h ago",
+          status: "AI Active",
+          badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
+    // Fetch live database statistics
+    async function loadLiveDashboardStats() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+
+        const { data: profile } = await supabase
+          .from("users")
+          .select("clinic_id")
+          .eq("id", user.id)
+          .single();
+
+        if (!profile?.clinic_id) {
+          setLoading(false);
+          return;
+        }
+
+        const clinicId = profile.clinic_id;
+
+        // 1. Total Conversations count
+        const { count: convCount } = await supabase
+          .from("conversations")
+          .select("*", { count: "exact", head: true })
+          .eq("clinic_id", clinicId);
+
+        setTotalConvs(convCount || 0);
+
+        // 2. Takeover Escalations count
+        const { count: escCount } = await supabase
+          .from("conversations")
+          .select("*", { count: "exact", head: true })
+          .eq("clinic_id", clinicId)
+          .eq("is_human_takeover", true);
+
+        setTakeoverCount(escCount || 0);
+
+        // 3. Bookings count (from appointments table)
+        const { data: appointments, count: apptCount } = await supabase
+          .from("appointments")
+          .select("*", { count: "exact" })
+          .eq("clinic_id", clinicId);
+
+        const currentBookings = apptCount || 0;
+        setBookingCount(currentBookings);
+
+        // Calculate naira qualified revenue (average ₦250k/procedure for aesthetics)
+        const totalValue = currentBookings * 250000;
+        setRevenueValue("₦" + totalValue.toLocaleString());
+
+        // 4. Fetch 3 most recent chat threads
+        const { data: recentConvs } = await supabase
+          .from("conversations")
+          .select("*")
+          .eq("clinic_id", clinicId)
+          .order("last_message_at", { ascending: false })
+          .limit(3);
+
+        const formattedChats: RecentChat[] = [];
+        for (const conv of recentConvs || []) {
+          const diffMs = new Date().getTime() - new Date(conv.last_message_at).getTime();
+          const diffMins = Math.floor(diffMs / 60000);
+          const diffHours = Math.floor(diffMins / 60);
+
+          let relativeTime = "Just now";
+          if (diffHours > 0) relativeTime = `${diffHours}h ago`;
+          else if (diffMins > 0) relativeTime = `${diffMins}m ago`;
+
+          formattedChats.push({
+            name: conv.patient_name || conv.patient_phone,
+            phone: conv.patient_phone,
+            time: relativeTime,
+            status: conv.is_human_takeover ? "Human Takeover" : "AI Active",
+            badge: conv.is_human_takeover
+              ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+              : "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+          });
+        }
+        setRecentChats(formattedChats);
+      } catch (err) {
+        console.error("Failed to load dashboard data:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadLiveDashboardStats();
+  }, []);
 
   const stats = [
     {
       name: "Total Conversations",
-      value: "142",
-      change: "+18% this week",
+      value: loading ? "..." : totalConvs.toString(),
+      change: isMockMode ? "+18% this week" : "Live threads in database",
       icon: (
         <svg
           className="w-5 h-5 text-[#D4AF37]"
@@ -42,9 +190,9 @@ export default function DashboardPage() {
       ),
     },
     {
-      name: "AI Auto-Response Rate",
-      value: "91.4%",
-      change: "130 threads automated",
+      name: "AI Automation Rate",
+      value: totalConvs > 0 ? `${Math.round(((totalConvs - takeoverCount) / totalConvs) * 100)}%` : "100%",
+      change: isMockMode ? "130 threads automated" : `${totalConvs - takeoverCount} threads automated`,
       icon: (
         <svg
           className="w-5 h-5 text-emerald-400"
@@ -62,9 +210,9 @@ export default function DashboardPage() {
       ),
     },
     {
-      name: "Human Takeover Escalations",
-      value: "12",
-      change: "12 threads in inbox",
+      name: "Human Escalations",
+      value: loading ? "..." : takeoverCount.toString(),
+      change: isMockMode ? "12 threads in inbox" : "Awaiting receptionist response",
       icon: (
         <svg
           className="w-5 h-5 text-amber-500"
@@ -83,8 +231,8 @@ export default function DashboardPage() {
     },
     {
       name: "Bookings qualified",
-      value: "₦3,850,000",
-      change: "Equivalent Naira revenue",
+      value: loading ? "..." : revenueValue,
+      change: isMockMode ? "Equivalent Naira revenue" : `${bookingCount} bookings scheduled`,
       icon: (
         <svg
           className="w-5 h-5 text-teal-400"
@@ -103,33 +251,9 @@ export default function DashboardPage() {
     },
   ];
 
-  const recentChats = [
-    {
-      name: "Chioma Adebayo",
-      phone: "+234 803 111 2222",
-      time: "5m ago",
-      status: "Human Takeover",
-      badge: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-    },
-    {
-      name: "Kelechi Okafor",
-      phone: "+234 812 333 4444",
-      time: "20m ago",
-      status: "AI Active",
-      badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    },
-    {
-      name: "Babajide Balogun",
-      phone: "+234 905 555 6666",
-      time: "1h ago",
-      status: "AI Active",
-      badge: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-    },
-  ];
-
   return (
     <SidebarLayout>
-      <div id="dashboard-page" className="dashboard-page space-y-8">
+      <div id="dashboard-page" className="dashboard-page space-y-8 font-sans">
         {/* Welcome Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
@@ -137,8 +261,7 @@ export default function DashboardPage() {
               Welcome back, {firstName}
             </h1>
             <p className="text-slate-400 text-xs mt-1">
-              Here is what is happening at **Zuri Aesthetic & Wellness Clinic**
-              (Lekki, Lagos).
+              Here is what is happening at **Zuri Aesthetic & Wellness Clinic** (Lekki, Lagos).
             </p>
           </div>
           <button
@@ -198,39 +321,45 @@ export default function DashboardPage() {
             </h3>
 
             <div className="divide-y divide-slate-850">
-              {recentChats.map((chat) => (
-                <div
-                  key={chat.name}
-                  className="flex justify-between items-center py-4 first:pt-0 last:pb-0"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-[#D4AF37]">
-                      {chat.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+              {loading ? (
+                <div className="text-xs text-slate-500 py-4">Loading threads...</div>
+              ) : recentChats.length === 0 ? (
+                <div className="text-xs text-slate-500 py-4">No recent threads recorded yet.</div>
+              ) : (
+                recentChats.map((chat) => (
+                  <div
+                    key={chat.phone}
+                    className="flex justify-between items-center py-4 first:pt-0 last:pb-0"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-[#D4AF37]">
+                        {chat.name
+                          .split(" ")
+                          .map((n) => n[0] || "")
+                          .join("")}
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-200">
+                          {chat.name}
+                        </p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">
+                          {chat.phone}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-200">
-                        {chat.name}
-                      </p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
-                        {chat.phone}
-                      </p>
+                    <div className="flex items-center gap-3.5">
+                      <span
+                        className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full ${chat.badge}`}
+                      >
+                        {chat.status}
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        {chat.time}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3.5">
-                    <span
-                      className={`text-[10px] font-bold border px-2.5 py-0.5 rounded-full ${chat.badge}`}
-                    >
-                      {chat.status}
-                    </span>
-                    <span className="text-[10px] text-slate-500">
-                      {chat.time}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
 
