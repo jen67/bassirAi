@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 
@@ -13,6 +13,8 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const pathname = usePathname();
   const supabase = createClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userName, setUserName] = useState("Babajide Benson");
+  const [userRole, setUserRole] = useState("Clinic Admin");
 
   const getCookieValue = (key: string, fallback: string) => {
     if (typeof document === "undefined") {
@@ -24,8 +26,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     return cookie ? decodeURIComponent(cookie.split("=")[1]) : fallback;
   };
 
-  const userName = getCookieValue("sb-mock-user-name", "Babajide Benson");
-  const userRole = getCookieValue("sb-mock-user-role", "Clinic Admin");
+  useEffect(() => {
+    setUserName(getCookieValue("sb-mock-user-name", "Babajide Benson"));
+    setUserRole(getCookieValue("sb-mock-user-role", "Clinic Admin"));
+  }, []);
 
   const handleSignOut = async () => {
     document.cookie =

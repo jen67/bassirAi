@@ -2,9 +2,11 @@
 
 import SidebarLayout from "@/components/SidebarLayout";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [firstName, setFirstName] = useState("Babajide");
 
   const getCookieValue = (key: string, fallback: string) => {
     if (typeof document === "undefined") {
@@ -16,9 +18,10 @@ export default function DashboardPage() {
     return cookie ? decodeURIComponent(cookie.split("=")[1]) : fallback;
   };
 
-  const firstName = getCookieValue("sb-mock-user-name", "Babajide").split(
-    " ",
-  )[0];
+  useEffect(() => {
+    const name = getCookieValue("sb-mock-user-name", "Babajide").split(" ")[0];
+    setFirstName(name);
+  }, []);
 
   const stats = [
     {
