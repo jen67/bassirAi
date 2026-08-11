@@ -162,10 +162,17 @@ export async function POST(request: Request) {
 
     // Optionally update conversation status to 'booked'
     if (conversation_id) {
-      await supabase
+      // Verify conversation belongs to this clinic before updating
+      const { error: convError } = await supabase
         .from("conversations")
         .update({ status: "booked" })
-        .eq("id", conversation_id);
+        .eq("id", conversation_id)
+        .eq("clinic_id", clinicId); // SECURITY: Enforce multi-tenancy
+
+      if (convError) {
+        console.error("Failed to update conversation status:", convError);
+        // Don't fail the appointment creation if conversation update fails
+      }
     }
 
     return NextResponse.json({
