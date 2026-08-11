@@ -79,18 +79,24 @@ export default function SettingsPage() {
           } = await auth.getUser();
           if (!user) return;
 
-          // Load clinic details from database
+          // Load clinic details and customizations from database
           const response = await fetch(
-            "/api/clinics/register?userId=" + user.id,
+            "/api/clinics/onboard?userId=" + user.id,
           );
           if (response.ok) {
             const data = await response.json();
-            setClinicName(data.name || "");
-            setAiTone(data.tone_of_voice || "professional");
-            // Load customizations...
+            setClinicName(data.clinicName || "");
+            setAiTone(data.aiTone || "professional");
+            setPrimaryLang(data.primaryLang || "en");
+            setWaPhoneId(data.waPhoneId || "");
+            setCatalog(data.catalog || []);
+            setFaqs(data.faqs || []);
+            setBookingStrategy(data.bookingStrategy || "callback");
+            setCalComUrl(data.calComUrl || "");
+            setCalComApiKey(data.calComApiKey || "");
           }
         } catch (e) {
-          console.error(e);
+          console.error("Failed to load clinic settings:", e);
         }
       }
     };

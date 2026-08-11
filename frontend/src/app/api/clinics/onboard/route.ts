@@ -164,3 +164,83 @@ Booking strategy: ${bookingStrategy}.`,
     );
   }
 }
+
+/**
+ * GET /api/clinics/onboard
+ *
+ * Retrieves clinic settings and customizations including catalog, FAQs, and WhatsApp settings.
+ */
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const userId = url.searchParams.get("userId");
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Missing userId parameter" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+
+    // 1. Get user's clinic_id
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("clinic_id")
+      .eq("id", userId)
+      .single();
+
+    if (userError || !userData) {
+      return NextResponse.json(
+        { error: "User not found or not linked to a clinic" },
+        { status: 404 },
+      );
+    }
+
+    const clinicId = userData.clinic_id;
+
+    // 2. Fetch clinic info
+    const { data: clinic, error: clinicError } = await supabase
+      .from("clinics")
+      .select("*")
+      .eq("id", clinicId)
+      .single();
+
+    if (clinicError || !clinic) {
+      return NextResponse.json(
+        { error: "Clinic not found" },
+        { status: 404 },
+      );
+    }
+
+    // 3. Fetch customizations
+    const { data: customizations } = await supabase
+      .from("clinic_customizations")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .maybeSingle();
+
+    return NextResponse.json({
+      success: true,
+      clinicName: clinic.name,
+      aiTone: clinic.tone_of_voice || "professional",
+      primaryLang: "en",
+      waPhoneId: clinic.whatsapp_number || "",
+      catalog: customizations?.catalog || [],
+      faqs: customizations?.faqs || [],
+      bookingStrategy: "callback",
+      calComUrl: "",
+      calComApiKey: ""
+    });
+  } catch (err: unknown) {
+    console.error("Fetch settings error:", err);
+    return NextResponse.json(
+      {
+        error:
+          err instanceof Error ? err.message : "Failed to load settings",
+      },
+      { status: 500 },
+    );
+  }
+}
