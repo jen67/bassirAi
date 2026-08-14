@@ -49,6 +49,9 @@ export default function LoginPage() {
       }
 
       document.cookie = "sb-mock-session=true; path=/; max-age=86400";
+      document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       document.cookie = `sb-mock-user-name=${encodeURIComponent(displayName)}; path=/; max-age=86400`;
       document.cookie = `sb-mock-user-role=${encodeURIComponent(roleName)}; path=/; max-age=86400`;
 
@@ -70,7 +73,7 @@ export default function LoginPage() {
     }
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -86,6 +89,9 @@ export default function LoginPage() {
             email === "admin"
           ) {
             document.cookie = "sb-mock-session=true; path=/; max-age=86400";
+            document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
+            document.cookie = "sb-onboarded=true; path=/; max-age=86400";
+            document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
             router.refresh();
             router.push("/dashboard");
             return;
@@ -94,6 +100,41 @@ export default function LoginPage() {
         setErrorMsg(error.message);
         setLoading(false);
       } else {
+        document.cookie = "sb-onboarded=true; path=/; max-age=86400";
+        document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
+        document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
+        // Check if returning user's clinic has customizations setup
+        if (data?.user) {
+          try {
+            const { data: userProf } = await supabase
+              .from("users")
+              .select("clinic_id")
+              .eq("id", data.user.id)
+              .maybeSingle();
+
+            if (userProf?.clinic_id) {
+              const { data: custom } = await supabase
+                .from("clinic_customizations")
+                .select("clinic_id")
+                .eq("clinic_id", userProf.clinic_id)
+                .maybeSingle();
+
+              if (!custom) {
+                // If user registered account previously but never completed onboarding
+                document.cookie = "sb-new-user=true; path=/; max-age=86400";
+                document.cookie = "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+                document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+                router.refresh();
+                router.push("/dashboard/onboarding");
+                return;
+              }
+            }
+          } catch (e) {
+            console.error("Error verifying customization status:", e);
+          }
+        }
+
         router.refresh();
         router.push("/dashboard");
       }
@@ -201,8 +242,12 @@ export default function LoginPage() {
         }
 
         console.log("Registration completed successfully!");
+        document.cookie = "sb-new-user=true; path=/; max-age=86400";
+        document.cookie = "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+        document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+
         setSuccessMsg(
-          "Registration successful! Please check your email to verify your account.",
+          "Registration successful! Please check your email to verify your account, or sign in to complete your clinic setup.",
         );
       }
     } catch (err: unknown) {

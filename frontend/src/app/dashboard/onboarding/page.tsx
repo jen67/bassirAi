@@ -210,6 +210,8 @@ export default function OnboardingPage() {
       // Mock save to localStorage
       localStorage.setItem("zuri_onboarding_state", JSON.stringify(payload));
       document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
       setTimeout(() => {
         router.refresh();
@@ -236,8 +238,10 @@ export default function OnboardingPage() {
         throw new Error(data.error || "Failed to save onboarding metadata");
       }
 
-      // Write live onboarded cookie
+      // Write live onboarded cookie & clear new-user cookie
       document.cookie = "sb-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
+      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
       router.refresh();
       router.push("/dashboard");
