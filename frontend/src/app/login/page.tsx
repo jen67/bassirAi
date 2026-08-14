@@ -25,6 +25,7 @@ export default function LoginPage() {
 
     const isMockEmail =
       email.endsWith("@zuri.clinic") ||
+      email.endsWith("@clinic.com") ||
       email === "admin@test.com" ||
       email === "admin";
 
@@ -385,7 +386,7 @@ export default function LoginPage() {
             <input
               type="email"
               required
-              placeholder="name@clinic.com"
+              placeholder="name@gmail.com or name@clinic.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-slate-950/80 border border-slate-800 rounded-lg py-2.5 px-3.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-[#D4AF37] transition-colors"
