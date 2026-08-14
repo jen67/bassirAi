@@ -56,7 +56,7 @@ ${JSON.stringify(custom?.faqs || [])}
 
 Answer the patient's inquiry accurately. Keep responses concise (under 3 sentences) and conversational.`;
 
-        const response = await fetch("https://api.groq.com/openapi/v1/chat/completions", {
+        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

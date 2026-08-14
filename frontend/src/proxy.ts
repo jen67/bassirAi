@@ -67,12 +67,16 @@ export async function proxy(request: NextRequest) {
       request.cookies.get('sb-onboarded')?.value === 'true' || 
       request.cookies.get('sb-mock-onboarded')?.value === 'true';
 
+    const isNewUser = request.cookies.get('sb-new-user')?.value === 'true';
+
     if (isProtectedRoute) {
-      if (!isOnboarded && url.pathname !== '/dashboard/onboarding') {
+      // Redirect first-time users who have not completed onboarding to onboarding wizard
+      if (isNewUser && !isOnboarded && url.pathname !== '/dashboard/onboarding') {
         url.pathname = '/dashboard/onboarding'
         return NextResponse.redirect(url)
       }
 
+      // Redirect onboarded users away from onboarding page to main dashboard
       if (isOnboarded && url.pathname === '/dashboard/onboarding') {
         url.pathname = '/dashboard'
         return NextResponse.redirect(url)
