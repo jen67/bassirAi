@@ -1,374 +1,826 @@
-# 🏥 BassirAI - AI Patient Communication Platform
+# BassirAI - AI-Powered Patient Communication Platform
 
-**Smart, multilingual AI receptionist for aesthetic clinics in Africa**
-
-[![Status](https://img.shields.io/badge/Status-MVP_Complete-success)](/)
-[![Frontend](https://img.shields.io/badge/Frontend-Next.js_16-black)](https://nextjs.org)
-[![Database](https://img.shields.io/badge/Database-Supabase-green)](https://supabase.com)
-[![AI](https://img.shields.io/badge/AI-Groq_Llama_3.3-purple)](https://groq.com)
+**Production-Ready MVP**  
+**Last Updated:** December 19, 2024  
+**Version:** 1.0.0  
+**Status:** ✅ Production Ready
 
 ---
 
-## 🎯 **What is BassirAI?**
+## 📋 Table of Contents
 
-BassirAI is an **AI-powered patient communication system** for aesthetic medical clinics. When patients message on WhatsApp asking "How much is Botox?", an AI responds **in under 1 second** with accurate pricing in Naira (₦). If the AI can't handle a complex question, a human receptionist takes over seamlessly.
-
-### **Key Features:**
-
-- 🤖 **Sub-second AI responses** via Groq Llama 3.3 70B
-- 💬 **Unified inbox** for WhatsApp, Instagram, Facebook
-- 🌍 **Built for Africa:** Lagos/Lekki context, Naira pricing
-- 🔄 **Human takeover** toggle for complex inquiries
-- 📊 **Real-time dashboard** with conversion metrics
-- 💰 **$0/month** hosting cost (free-tier tools)
-
----
-
-## 📸 **Screenshots**
-
-### Dashboard
-
-<img src="docs/dashboard-preview.png" alt="Dashboard" width="800"/>
-
-### Unified Inbox
-
-<img src="docs/inbox-preview.png" alt="Inbox" width="800"/>
+1. [Overview](#overview)
+2. [System Architecture](#system-architecture)
+3. [Features Implemented](#features-implemented)
+4. [Technology Stack](#technology-stack)
+5. [Project Structure](#project-structure)
+6. [Installation & Setup](#installation--setup)
+7. [Page Flow & Navigation](#page-flow--navigation)
+8. [Database Schema](#database-schema)
+9. [API Routes](#api-routes)
+10. [Security & Multi-Tenancy](#security--multi-tenancy)
+11. [Environment Configuration](#environment-configuration)
+12. [Deployment Guide](#deployment-guide)
+13. [Testing](#testing)
+14. [Documentation Files](#documentation-files)
 
 ---
 
-## 🚀 **Quick Start**
+## 🎯 Overview
 
-### **Prerequisites:**
+BassirAI is an AI-powered patient communication platform designed specifically for aesthetic clinics in Africa. It automates patient inquiries on WhatsApp, Instagram, and Facebook using AI (Groq Llama 3.3 70B) with RAG (Pinecone) for contextual responses, while seamlessly handing off complex conversations to human receptionists.
 
-- Node.js 20+
-- npm or yarn
-- (Optional) Supabase account
+### Core Value Proposition
 
-### **1. Clone & Install:**
+- **24/7 AI Patient Support** - Automated responses on multiple messaging platforms
+- **Smart Booking System** - AI qualifies leads and creates booking requests
+- **Human Takeover** - Seamless escalation to clinic staff when needed
+- **Multi-Tenant** - Secure, isolated data for each clinic
+- **Mobile-First** - Responsive design for tablets and mobile devices
 
-```bash
-git clone <your-repo-url>
-cd bassirai
-cd frontend
-npm install
-```
+### Target Market
 
-### **2. Configure Environment:**
-
-```bash
-cp .env.local.example .env.local
-# Edit .env.local with your Supabase keys
-```
-
-### **3. Run Development Server:**
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### **4. Test in Mock Mode:**
-
-- Go to `/login`
-- Enter: `benson@zuri.clinic` (any password)
-- Explore dashboard, inbox, settings!
+- Aesthetic clinics in Nigeria, Kenya, South Africa, Ghana
+- Small to medium clinics (1-10 staff)
+- Clinics using WhatsApp, Instagram DM, and Facebook Messenger
 
 ---
 
-## 📁 **Project Structure**
+## 🏗️ System Architecture
 
 ```
-bassirai/
-├── bassirai-mvp/                 ← Database & n8n workflow files
-│   ├── database/
-│   │   ├── schema.sql            ← PostgreSQL table definitions
-│   │   ├── rls-policies.sql      ← Row-level security rules
-│   │   └── seed.sql              ← Sample data (Zuri Clinic)
-│   ├── n8n-workflows/            ← WhatsApp → AI automation
-│   └── docker/                   ← Local dev environment
-│
-├── frontend/                     ← Main Next.js application
-│   ├── src/
-│   │   ├── app/                  ← Pages & API routes
-│   │   │   ├── login/            ← Authentication
-│   │   │   ├── dashboard/        ← Analytics overview
-│   │   │   ├── inbox/            ← Chat management (CORE)
-│   │   │   ├── settings/         ← Configuration
-│   │   │   └── api/              ← Backend endpoints
-│   │   ├── components/           ← React components
-│   │   │   └── SidebarLayout.tsx ← Navigation wrapper
-│   │   └── utils/                ← Helper functions
-│   │       └── supabase/         ← Database clients
-│   ├── public/                   ← Static assets
-│   ├── package.json              ← Dependencies
-│   └── .env.local                ← Environment variables
-│
-├── bassirai-figma-design/        ← HTML/CSS prototype
+┌─────────────────────────────────────────────────────────────────┐
+│                         PATIENT LAYER                            │
+│         WhatsApp  │  Instagram DM  │  Facebook Messenger         │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    AUTOMATION LAYER (n8n)                        │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐       │
+│  │   Webhook    │──▶│  AI Responder│──▶│ RAG Retrieval│       │
+│  │   Receiver   │   │   (Groq AI)  │   │  (Pinecone)  │       │
+│  └──────────────┘   └──────────────┘   └──────────────┘       │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    DATABASE LAYER (Supabase)                     │
+│         PostgreSQL + Row Level Security + Realtime               │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              FRONTEND LAYER (Next.js 14 + React)                 │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
+│  │Dashboard │  │  Inbox   │  │Appointmnt│  │ Settings │       │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+
+1. **Inbound Message** → Patient sends WhatsApp/Instagram/Facebook message
+2. **Webhook Trigger** → Meta/WhatsApp API posts to n8n webhook
+3. **Clinic Resolution** → n8n looks up clinic by phone number
+4. **Context Retrieval** → Fetch clinic customizations (FAQs, catalog, tone)
+5. **RAG Query** → Search Pinecone for relevant knowledge base context
+6. **AI Generation** → Groq Llama 3.3 generates response using context
+7. **Database Save** → Message saved to Supabase (conversations + messages tables)
+8. **Realtime Update** → Inbox UI updates via Supabase Realtime
+9. **Reply Sent** → Response sent via WhatsApp/Instagram/Facebook API
+
+---
+
+## ✨ Features Implemented
+
+### Authentication & Onboarding ✅
+
+- [x] User registration with clinic creation
+- [x] Supabase Auth integration
+- [x] 6-step progressive onboarding wizard
+  - Step 1: Clinic Identity (name, tone, language)
+  - Step 2: Platform Integrations (WhatsApp, Instagram, Facebook)
+  - Step 3: Services Catalog (treatments, pricing)
+  - Step 4: FAQs (knowledge base)
+  - Step 5: Booking Strategy (Cal.com or callback)
+  - Step 6: AI Sandbox (test the AI agent)
+- [x] Mock mode for development without database
+
+### Dashboard ✅
+
+- [x] Real-time statistics (conversations, AI automation rate, escalations, bookings)
+- [x] Recent inbox threads preview
+- [x] AI system configuration display
+- [x] Live/Mock mode toggle
+
+### Unified Inbox ✅
+
+- [x] Multi-channel conversation list (WhatsApp, Instagram, Facebook)
+- [x] Real-time message updates (Supabase Realtime)
+- [x] Thread view with full message history
+- [x] Human takeover toggle (AI ↔ Manual mode)
+- [x] Reply interface with send functionality
+- [x] Search and filter by status/channel
+- [x] Mock message simulator for testing
+
+### Appointments Management ✅
+
+- [x] Three view modes: List, Calendar, Timeline
+- [x] Create, read, update, delete appointments
+- [x] Status management (pending, confirmed, completed, cancelled)
+- [x] Date picker with pre-fill from calendar clicks
+- [x] WhatsApp reminder functionality
+- [x] Conversation linking
+- [x] Search and filter by status/date
+- [x] Mobile-responsive design
+- [x] Statistics cards (collapsible on medium screens)
+- [x] API integration with fallback to mock data
+
+### Settings ✅
+
+- [x] Clinic metadata configuration
+- [x] Platform integrations management (toggle platforms, update credentials)
+- [x] AI tone and language settings
+- [x] Services catalog editor (add, edit, remove)
+- [x] FAQs editor (add, edit, remove)
+- [x] Booking strategy selection
+- [x] Save to database with validation
+
+### Security ✅
+
+- [x] Row Level Security (RLS) on all tables
+- [x] Multi-tenancy enforcement (clinic_id isolation)
+- [x] Input validation on all API routes
+- [x] Authentication checks on protected routes
+- [x] XSS and SQL injection protection
+- [x] Secure token storage
+- [x] HTTPS enforcement (production)
+
+---
+
+## 🛠️ Technology Stack
+
+### Frontend
+
+- **Framework:** Next.js 14 (App Router)
+- **Language:** TypeScript
+- **UI Library:** React 18
+- **Styling:** TailwindCSS + Custom Design System
+- **Icons:** Lucide React
+- **State Management:** React Hooks (useState, useEffect)
+- **Real-time:** Supabase Realtime subscriptions
+- **HTTP Client:** Fetch API
+
+### Backend
+
+- **Database:** PostgreSQL (via Supabase)
+- **Auth:** Supabase Auth (JWT-based)
+- **API:** Next.js API Routes (serverless)
+- **Automation:** n8n (self-hosted)
+- **AI Model:** Groq Llama 3.3 70B
+- **Vector DB:** Pinecone (RAG knowledge retrieval)
+- **File Storage:** Google Drive (for RAG ingestion)
+
+### Infrastructure
+
+- **Hosting:** Vercel (frontend), Railway (database & n8n)
+- **Domain:** Custom domain with SSL
+- **CI/CD:** GitHub Actions + Vercel auto-deploy
+- **Monitoring:** Vercel Analytics
+
+### External APIs
+
+- **WhatsApp:** Meta Cloud API
+- **Instagram:** Meta Graph API
+- **Facebook:** Meta Messenger API
+- **Calendar:** Cal.com API (optional)
+
+---
+
+## 📁 Project Structure
+
+```
+bassirai-mvp/
+├── bassirai-figma-design/          # Static design prototype
 │   ├── index.html
-│   ├── app.js
-│   └── style.css
+│   ├── style.css
+│   └── app.js
 │
-├── COMPREHENSIVE_GUIDE.md        ← Layman explanations of every file
-├── ERRORS_FIXED_CHECKLIST.md     ← Testing & verification guide
-└── README.md                     ← This file
+├── bassirai-mvp/                   # Backend configuration
+│   ├── database/
+│   │   ├── schema.sql              # PostgreSQL schema
+│   │   ├── rls-policies.sql        # Row Level Security
+│   │   ├── performance-indexes.sql # Database indexes
+│   │   ├── seed.sql                # Sample data
+│   │   └── MIGRATION_PLATFORM_SELECTION.sql
+│   ├── docker/
+│   │   ├── docker-compose.yml      # n8n + PostgreSQL containers
+│   │   └── .env
+│   ├── n8n-workflows/
+│   │   ├── ai-responder-rag.json   # Main AI workflow
+│   │   ├── rag-loader-workflow.json
+│   │   └── n8n_integration_guide.md
+│   └── .env.example
+│
+├── frontend/                       # Next.js application
+│   ├── src/
+│   │   ├── app/                    # App Router pages
+│   │   │   ├── page.tsx            # Home page (redirects to /login or /dashboard)
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx        # Login & Registration
+│   │   │   ├── dashboard/
+│   │   │   │   ├── page.tsx        # Dashboard home
+│   │   │   │   └── onboarding/
+│   │   │   │       └── page.tsx    # 6-step onboarding wizard
+│   │   │   ├── inbox/
+│   │   │   │   └── page.tsx        # Unified inbox
+│   │   │   ├── appointments/
+│   │   │   │   └── page.tsx        # Appointments management
+│   │   │   ├── settings/
+│   │   │   │   └── page.tsx        # Settings page
+│   │   │   ├── auth/
+│   │   │   │   └── callback/
+│   │   │   │       └── route.ts    # OAuth callback handler
+│   │   │   └── api/                # API Routes
+│   │   │       ├── health/
+│   │   │       │   └── route.ts    # Health check endpoint
+│   │   │       ├── clinics/
+│   │   │       │   ├── register/
+│   │   │       │   │   └── route.ts
+│   │   │       │   └── onboard/
+│   │   │       │       └── route.ts
+│   │   │       ├── users/
+│   │   │       │   └── register/
+│   │   │       │       └── route.ts
+│   │   │       ├── appointments/
+│   │   │       │   ├── list/
+│   │   │       │   │   └── route.ts
+│   │   │       │   ├── create/
+│   │   │       │   │   └── route.ts
+│   │   │       │   └── update/
+│   │   │       │       └── route.ts
+│   │   │       ├── chats/
+│   │   │       │   └── toggle-takeover/
+│   │   │       │       └── route.ts
+│   │   │       └── ai/
+│   │   │           └── generate/
+│   │   │               └── route.ts
+│   │   ├── components/
+│   │   │   ├── SidebarLayout.tsx   # Main layout with navigation
+│   │   │   └── appointments/       # Appointment components
+│   │   │       ├── CalendarView.tsx
+│   │   │       ├── ListView.tsx
+│   │   │       ├── TimelineView.tsx
+│   │   │       ├── Toolbar.tsx
+│   │   │       ├── StatsCards.tsx
+│   │   │       ├── NewAppointmentModal.tsx
+│   │   │       ├── DateDetailsModal.tsx
+│   │   │       ├── types.ts
+│   │   │       └── utils.ts
+│   │   └── utils/
+│   │       └── supabase/
+│   │           ├── client.ts       # Browser Supabase client
+│   │           ├── server.ts       # Server Supabase client
+│   │           └── admin.ts        # Admin Supabase client
+│   ├── public/                     # Static assets
+│   ├── .env.local                  # Environment variables
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── tailwind.config.js
+│   └── next.config.ts
+│
+├── docs/                           # Comprehensive documentation
+│   ├── APPOINTMENTS_UPDATE.md
+│   ├── COMPLETE_SECURITY_AUDIT_SUMMARY.md
+│   ├── COMPREHENSIVE_GUIDE.md
+│   ├── ENVIRONMENT_SETUP_GUIDE.md
+│   ├── ERRORS_FIXED_CHECKLIST.md
+│   ├── IMPLEMENTATION_SUMMARY.md
+│   ├── MISSING_FEATURES_ROADMAP.md
+│   ├── MOCK_TO_PRODUCTION_GUIDE.md
+│   ├── MULTI_TENANCY_SECURITY_AUDIT.md
+│   ├── PLATFORM_INTEGRATION_IMPLEMENTATION.md
+│   ├── PRODUCTION_DEPLOYMENT_READY.md
+│   ├── PRODUCTION_READY_CHECKLIST.md
+│   ├── PRODUCTION_READY.md
+│   ├── PROJECT_STATUS.md
+│   ├── QUICK_START.md
+│   ├── SECURITY_FIXES_APPLIED.md
+│   ├── SYSTEM_FLOW_EXPLAINED.md
+│   └── SYSTEM_FLOWCHART.md
+│
+└── README.md                       # This file
 ```
 
 ---
 
-## 🗄️ **Database Schema**
+## 🚀 Installation & Setup
 
-### **Core Tables:**
+### Prerequisites
 
-| Table                   | Purpose             | Key Fields                                |
-| ----------------------- | ------------------- | ----------------------------------------- |
-| `clinics`               | Clinic profiles     | name, email, phone, ai_mode               |
-| `users`                 | Staff accounts      | clinic_id, email, role                    |
-| `conversations`         | Patient threads     | patient_phone, channel, is_human_takeover |
-| `messages`              | Individual messages | content, direction, is_ai_generated       |
-| `clinic_customizations` | AI settings         | catalog (JSONB), faqs (JSONB)             |
-| `appointments`          | Booking records     | patient_name, procedure, status           |
+- Node.js 18+ and npm/yarn
+- Git
+- Supabase account (free tier works)
+- n8n instance (optional for full automation)
+- Meta Developer account (for WhatsApp/Instagram/Facebook APIs)
 
-### **Setup:**
+### Step 1: Clone Repository
 
 ```bash
-# 1. Create Supabase project at supabase.com
-# 2. Run SQL in Supabase SQL Editor:
-cat bassirai-mvp/database/schema.sql | pbcopy
-# Paste into Supabase SQL Editor → Run
-
-# 3. Apply RLS policies:
-cat bassirai-mvp/database/rls-policies.sql | pbcopy
-# Paste → Run
-
-# 4. Seed sample data:
-cat bassirai-mvp/database/seed.sql | pbcopy
-# Paste → Run
+git clone https://github.com/yourusername/bassir-ai.git
+cd bassir-ai/frontend
 ```
 
----
+### Step 2: Install Dependencies
 
-## 🔐 **Environment Variables**
+```bash
+npm install
+# or
+yarn install
+```
 
-Create `frontend/.env.local`:
+### Step 3: Set Up Environment Variables
+
+Create `.env.local` in the `frontend/` directory:
 
 ```env
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
-
-# Optional: Groq AI (for production)
-GROQ_API_KEY=gsk_...
-
-# Optional: n8n Webhook URL
-N8N_WEBHOOK_URL=https://your-n8n-instance.com/webhook/...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-**Important:** Never commit `.env.local` to Git!
+### Step 4: Set Up Database
+
+1. **Create Supabase Project**
+   - Go to [https://supabase.com](https://supabase.com)
+   - Create new project
+   - Copy URL and keys to `.env.local`
+
+2. **Run Database Schema**
+   ```sql
+   -- In Supabase SQL Editor, run these files in order:
+   1. bassirai-mvp/database/schema.sql
+   2. bassirai-mvp/database/rls-policies.sql
+   3. bassirai-mvp/database/performance-indexes.sql
+   4. bassirai-mvp/database/seed.sql (optional - sample data)
+   ```
+
+### Step 5: Run Development Server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000)
+
+### Step 6: Test the Application
+
+1. **Register a new clinic:**
+   - Go to http://localhost:3000/login
+   - Click "Register Clinic"
+   - Fill in clinic details
+   - You'll be redirected to the 6-step onboarding wizard
+
+2. **Complete onboarding:**
+   - Step through all 6 onboarding steps
+   - Test the AI sandbox in Step 6
+
+3. **Explore the dashboard:**
+   - View statistics and recent conversations
+   - Navigate to Inbox, Appointments, Settings
 
 ---
 
-## 🧪 **Testing**
+## 📱 Page Flow & Navigation
 
-### **Manual Testing:**
+### User Journey Map
 
-```bash
-# 1. Login
-Visit: http://localhost:3000/login
-Email: benson@zuri.clinic
-Password: (anything in mock mode)
-
-# 2. Dashboard
-✅ Verify 4 stat cards display
-✅ Check recent conversations list
-
-# 3. Inbox
-✅ Click 3 patient threads
-✅ Toggle "Human Takeover" switch
-✅ Use "Simulate Message" button
-✅ Type manual reply (when Human mode ON)
-
-# 4. Settings
-✅ Add treatment to catalog
-✅ Add FAQ entry
-✅ Save settings
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     NEW USER REGISTRATION                        │
+└─────────────────────┬───────────────────────────────────────────┘
+                      │
+                      ▼
+            ┌──────────────────┐
+            │   /login         │  Landing Page
+            │                  │  - Sign In Tab
+            │                  │  - Register Tab
+            └────────┬─────────┘
+                     │
+          ┌──────────┴──────────┐
+          │                     │
+   [Sign In]              [Register Clinic]
+          │                     │
+          │                     ▼
+          │         ┌──────────────────────┐
+          │         │ /dashboard/onboarding│
+          │         │                      │
+          │         │ Step 1: Identity     │
+          │         │ Step 2: Platforms    │
+          │         │ Step 3: Services     │
+          │         │ Step 4: FAQs         │
+          │         │ Step 5: Booking      │
+          │         │ Step 6: Sandbox      │
+          │         └──────────┬───────────┘
+          │                    │
+          │                    │ [Complete]
+          │                    │
+          └──────────┬─────────┘
+                     │
+                     ▼
+            ┌──────────────────┐
+            │   /dashboard     │  Main Dashboard
+            │                  │  - Stats Overview
+            │                  │  - Recent Threads
+            │                  │  - Quick Actions
+            └────────┬─────────┘
+                     │
+      ┌──────────────┼──────────────┬──────────────┐
+      │              │              │              │
+      ▼              ▼              ▼              ▼
+┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐
+│  /inbox  │  │/appointme│  │/settings │  │  Logout  │
+│          │  │   nts    │  │          │  │          │
+│ - Convos │  │          │  │ - Config │  │ - Clear  │
+│ - Reply  │  │ - Create │  │ - Edit   │  │ - Return │
+│ - Toggle │  │ - Update │  │ - Save   │  │   to     │
+│   AI     │  │ - Filter │  │          │  │  /login  │
+└──────────┘  └──────────┘  └──────────┘  └──────────┘
 ```
 
-### **Automated Testing:**
+### Page Descriptions
 
-```bash
-# Type check
-npm run build
+#### 1. **`/` (Home Page)**
 
-# Lint check
-npx eslint src
+- **Purpose:** Landing page / redirect logic
+- **Behavior:**
+  - If user is authenticated → Redirect to `/dashboard`
+  - If user is not authenticated → Redirect to `/login`
+- **Components:** Simple redirect, no UI
 
-# (TODO) Unit tests
-npm run test
+#### 2. **`/login` (Authentication)**
+
+- **Purpose:** User login and clinic registration
+- **Features:**
+  - Tab switcher (Sign In / Register Clinic)
+  - Email/password authentication
+  - Mock mode support (for testing without database)
+  - Auto-redirect to onboarding for new users
+- **Form Fields (Register):**
+  - Clinic Name
+  - Full Name
+  - Email
+  - Password
+- **Redirect:**
+  - After registration → `/dashboard/onboarding`
+  - After login (returning user) → `/dashboard`
+
+#### 3. **`/dashboard/onboarding` (6-Step Wizard)**
+
+- **Purpose:** Initial clinic setup
+- **Steps:**
+  1. **Clinic Identity**
+     - Clinic name, AI tone, primary language
+  2. **Platform Integrations**
+     - Toggle WhatsApp, Instagram, Facebook
+     - Enter credentials for each platform
+     - Validation: Must enable at least 1 platform
+  3. **Services Catalog**
+     - Add treatments/services with pricing
+     - Dynamic add/remove rows
+  4. **FAQs**
+     - Add frequently asked questions and answers
+     - Knowledge base for AI responses
+  5. **Booking Strategy**
+     - Choose: Receptionist Callback OR Cal.com Integration
+     - Optional Cal.com URL and API key
+  6. **AI Sandbox**
+     - Test the AI agent with sample questions
+     - Preview how AI responds with your data
+- **Completion:**
+  - Saves all data to database
+  - Sets onboarded cookie
+  - Redirects to `/dashboard`
+
+#### 4. **`/dashboard` (Main Dashboard)**
+
+- **Purpose:** Overview and quick navigation
+- **Sections:**
+  - **Welcome Header** - Personalized greeting with clinic name
+  - **Stats Grid** (4 cards):
+    1. Total Conversations
+    2. AI Automation Rate (%)
+    3. Human Escalations
+    4. Bookings Qualified (₦ value)
+  - **Recent Inbox Threads** - Last 3 conversations with status
+  - **AI Agent System Info** - Configuration display
+  - **Quick Actions** - "Open Live Inbox" button
+- **Navigation:** Sidebar with links to Inbox, Appointments, Settings
+
+#### 5. **`/inbox` (Unified Inbox)**
+
+- **Purpose:** Manage all patient conversations
+- **Layout:** Split view
+  - **Left Panel:** Conversation list
+    - Filter by status (all, new, active, booked, closed)
+    - Filter by channel (WhatsApp, Instagram, Facebook)
+    - Search by patient name/phone
+    - Real-time updates via Supabase Realtime
+  - **Right Panel:** Thread view
+    - Message history (inbound/outbound)
+    - AI-generated badge indicator
+    - Human takeover toggle button
+    - Reply input with send button
+    - Patient metadata display
+- **Features:**
+  - Real-time message syncing
+  - AI ↔ Human mode toggle per conversation
+  - Simulate incoming messages (mock mode)
+  - Responsive mobile design
+
+#### 6. **`/appointments` (Appointments Management)**
+
+- **Purpose:** Schedule and manage patient appointments
+- **View Modes:**
+  - **List View:** Table with all appointments, sortable columns
+  - **Calendar View:** Monthly calendar with appointment dots, click dates to create
+  - **Timeline View:** Chronological timeline with appointment cards
+- **Features:**
+  - **Toolbar:**
+    - View mode switcher (List/Calendar/Timeline)
+    - New Appointment button
+    - Search input (patient name/phone/procedure)
+    - Status filter dropdown
+    - Show/Hide Stats toggle (medium screens only)
+  - **Stats Cards:** (collapsible on tablets)
+    - Total Appointments
+    - Confirmed
+    - Pending
+    - Completed
+  - **Create Appointment:**
+    - Patient name, phone, procedure
+    - Date & time picker
+    - Notes field
+    - Status selection
+    - Link to conversation (optional)
+  - **Update Appointment:**
+    - Change status (pending → confirmed → completed → cancelled)
+    - Edit details
+    - Send WhatsApp reminder
+  - **Calendar Interactions:**
+    - Click empty date → Create appointment with pre-filled date
+    - Click date with appointments → Show date details modal
+  - **Date Details Modal:**
+    - Light backdrop (calendar visible behind)
+    - List of all appointments for selected date
+    - Quick actions (view, edit, complete, cancel)
+- **Data Flow:**
+  - Tries API first (`/api/appointments/list`, `/create`, `/update`)
+  - Falls back to mock data if API fails
+  - Optimistic UI updates with automatic rollback on error
+
+#### 7. **`/settings` (Configuration)**
+
+- **Purpose:** Manage clinic settings
+- **Sections:**
+  1. **Clinic Metadata**
+     - Clinic name
+     - AI tone of voice
+  2. **Platform Integrations**
+     - Toggle platforms ON/OFF
+     - Update credentials for each platform
+     - Same UI as onboarding Step 2
+  3. **Services Catalog**
+     - Edit treatments/services
+     - Add/remove rows
+  4. **FAQs**
+     - Edit questions/answers
+     - Add/remove rows
+- **Save:** All changes saved to database with validation
+
+---
+
+## 🗄️ Database Schema
+
+### Entity Relationship Diagram
+
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│      clinics        │         │        users        │
+├─────────────────────┤         ├─────────────────────┤
+│ id (PK)             │◄───────┤│ id (PK)             │
+│ name                │         │ clinic_id (FK)      │
+│ email               │         │ email               │
+│ phone               │         │ full_name           │
+│ enabled_platforms   │         │ role                │
+│ whatsapp_number     │         │ is_active           │
+│ whatsapp_phone_id   │         │ last_login          │
+│ whatsapp_token      │         │ created_at          │
+│ instagram_username  │         └─────────────────────┘
+│ instagram_access... │
+│ facebook_page_id    │         ┌─────────────────────┐
+│ facebook_access...  │         │clinic_customizations│
+│ ai_mode             │         ├─────────────────────┤
+│ tone_of_voice       │◄───────┤│ id (PK)             │
+│ is_active           │         │ clinic_id (FK,UNIQ) │
+│ created_at          │         │ catalog (JSONB)     │
+│ updated_at          │         │ faqs (JSONB)        │
+└──────────┬──────────┘         │ custom_prompt       │
+           │                    │ google_drive_folder │
+           │                    │ pinecone_namespace  │
+           │                    │ created_at          │
+           │                    │ updated_at          │
+           │                    └─────────────────────┘
+           │
+           │                    ┌─────────────────────┐
+           │                    │   conversations     │
+           │                    ├─────────────────────┤
+           └───────────────────▶│ id (PK)             │
+                                │ clinic_id (FK)      │
+                                │ patient_phone       │
+                                │ patient_name        │
+                                │ channel             │
+                                │ status              │
+                                │ is_human_takeover   │
+                                │ last_message_at     │
+                                │ created_at          │
+                                └──────────┬──────────┘
+                                           │
+                                           │
+           ┌───────────────────────────────┼────────────────────┐
+           │                               │                    │
+           ▼                               ▼                    ▼
+┌─────────────────────┐         ┌─────────────────────┐
+│      messages       │         │    appointments     │
+├─────────────────────┤         ├─────────────────────┤
+│ id (PK)             │         │ id (PK)             │
+│ clinic_id (FK)      │         │ clinic_id (FK)      │
+│ conversation_id(FK) │         │ conversation_id(FK) │
+│ content             │         │ patient_name        │
+│ media_url           │         │ patient_phone       │
+│ direction           │         │ procedure           │
+│ is_ai_generated     │         │ appointment_date    │
+│ created_at          │         │ status              │
+└─────────────────────┘         │ notes               │
+                                │ created_at          │
+                                └─────────────────────┘
+```
+
+### Table Definitions
+
+#### `clinics`
+
+**Purpose:** Store clinic metadata and platform credentials
+
+| Column                   | Type        | Description                                                         |
+| ------------------------ | ----------- | ------------------------------------------------------------------- |
+| `id`                     | UUID        | Primary key                                                         |
+| `name`                   | TEXT        | Clinic name (e.g., "Zuri Aesthetic Clinic")                         |
+| `email`                  | TEXT        | Clinic email (unique)                                               |
+| `phone`                  | TEXT        | Main clinic phone number                                            |
+| `enabled_platforms`      | JSONB       | Array of enabled platforms: `["whatsapp", "instagram", "facebook"]` |
+| `whatsapp_number`        | TEXT        | WhatsApp business phone number                                      |
+| `whatsapp_phone_id`      | TEXT        | Meta WhatsApp Phone ID                                              |
+| `whatsapp_token`         | TEXT        | Meta WhatsApp Access Token                                          |
+| `instagram_username`     | TEXT        | Instagram business username                                         |
+| `instagram_access_token` | TEXT        | Instagram API access token                                          |
+| `facebook_page_id`       | TEXT        | Facebook Page ID                                                    |
+| `facebook_access_token`  | TEXT        | Facebook Page Access Token                                          |
+| `ai_mode`                | BOOLEAN     | AI automation enabled (default: true)                               |
+| `tone_of_voice`          | TEXT        | AI response tone: professional/friendly/luxury                      |
+| `is_active`              | BOOLEAN     | Clinic active status                                                |
+| `created_at`             | TIMESTAMPTZ | Record creation timestamp                                           |
+| `updated_at`             | TIMESTAMPTZ | Last update timestamp (auto-updated)                                |
+
+#### `users`
+
+**Purpose:** Store clinic staff user accounts
+
+| Column       | Type        | Description                                 |
+| ------------ | ----------- | ------------------------------------------- |
+| `id`         | UUID        | Primary key (matches Supabase Auth user ID) |
+| `clinic_id`  | UUID        | Foreign key to clinics table                |
+| `email`      | TEXT        | User email (unique)                         |
+| `full_name`  | TEXT        | User's full name                            |
+| `role`       | ENUM        | User role: `clinic_admin` or `receptionist` |
+| `is_active`  | BOOLEAN     | Account active status                       |
+| `last_login` | TIMESTAMPTZ | Last login timestamp                        |
+| `created_at` | TIMESTAMPTZ | Account creation timestamp                  |
+
+#### `clinic_customizations`
+
+**Purpose:** Store clinic-specific AI configurations
+
+| Column                   | Type        | Description                                               |
+| ------------------------ | ----------- | --------------------------------------------------------- |
+| `id`                     | UUID        | Primary key                                               |
+| `clinic_id`              | UUID        | Foreign key to clinics (UNIQUE)                           |
+| `catalog`                | JSONB       | Services/treatments array: `[{name, price, description}]` |
+| `faqs`                   | JSONB       | FAQ array: `[{question, answer}]`                         |
+| `custom_prompt`          | TEXT        | AI system prompt template                                 |
+| `google_drive_folder_id` | TEXT        | Google Drive folder for RAG ingestion                     |
+| `pinecone_namespace`     | TEXT        | Pinecone namespace for vector storage                     |
+| `created_at`             | TIMESTAMPTZ | Record creation timestamp                                 |
+| `updated_at`             | TIMESTAMPTZ | Last update timestamp (auto-updated)                      |
+
+#### `conversations`
+
+**Purpose:** Store patient conversation threads
+
+| Column              | Type        | Description                                              |
+| ------------------- | ----------- | -------------------------------------------------------- |
+| `id`                | UUID        | Primary key                                              |
+| `clinic_id`         | UUID        | Foreign key to clinics                                   |
+| `patient_phone`     | TEXT        | Patient phone number (E.164 format)                      |
+| `patient_name`      | TEXT        | Patient name (extracted from messages)                   |
+| `channel`           | ENUM        | Message platform: `whatsapp`, `instagram`, `facebook`    |
+| `status`            | ENUM        | Conversation status: `new`, `active`, `booked`, `closed` |
+| `is_human_takeover` | BOOLEAN     | AI disabled, human handling (default: false)             |
+| `last_message_at`   | TIMESTAMPTZ | Timestamp of last message                                |
+| `created_at`        | TIMESTAMPTZ | Conversation start timestamp                             |
+| **UNIQUE**          | -           | `(clinic_id, patient_phone, channel)`                    |
+
+#### `messages`
+
+**Purpose:** Store individual messages in conversations
+
+| Column            | Type        | Description                                |
+| ----------------- | ----------- | ------------------------------------------ |
+| `id`              | UUID        | Primary key                                |
+| `clinic_id`       | UUID        | Foreign key to clinics                     |
+| `conversation_id` | UUID        | Foreign key to conversations               |
+| `content`         | TEXT        | Message text content                       |
+| `media_url`       | TEXT        | URL of attached media (images, etc.)       |
+| `direction`       | ENUM        | Message direction: `inbound` or `outbound` |
+| `is_ai_generated` | BOOLEAN     | Message generated by AI (vs. human)        |
+| `created_at`      | TIMESTAMPTZ | Message timestamp                          |
+
+#### `appointments`
+
+**Purpose:** Store scheduled patient appointments
+
+| Column             | Type        | Description                                                          |
+| ------------------ | ----------- | -------------------------------------------------------------------- |
+| `id`               | UUID        | Primary key                                                          |
+| `clinic_id`        | UUID        | Foreign key to clinics                                               |
+| `conversation_id`  | UUID        | Foreign key to conversations (nullable)                              |
+| `patient_name`     | TEXT        | Patient name                                                         |
+| `patient_phone`    | TEXT        | Patient phone number                                                 |
+| `procedure`        | TEXT        | Treatment/service booked                                             |
+| `appointment_date` | TIMESTAMPTZ | Scheduled appointment date and time                                  |
+| `status`           | ENUM        | Appointment status: `pending`, `confirmed`, `completed`, `cancelled` |
+| `notes`            | TEXT        | Additional notes                                                     |
+| `created_at`       | TIMESTAMPTZ | Record creation timestamp                                            |
+
+### Enums
+
+```sql
+CREATE TYPE user_role AS ENUM ('clinic_admin', 'receptionist');
+CREATE TYPE msg_channel AS ENUM ('whatsapp', 'instagram', 'facebook');
+CREATE TYPE conv_status AS ENUM ('new', 'active', 'booked', 'closed');
+CREATE TYPE msg_dir AS ENUM ('inbound', 'outbound');
+CREATE TYPE appt_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled');
 ```
 
 ---
 
-## 🌐 **Deployment**
+## 🔌 API Routes
 
-### **Option 1: Vercel (Recommended)**
+All API routes are in `frontend/src/app/api/`. They use Next.js 14 Route Handlers.
 
-```bash
-# Install Vercel CLI
-npm i -g vercel
+### Health Check
 
-# Deploy
-cd frontend
-vercel
+#### `GET /api/health`
 
-# Set environment variables in Vercel dashboard
-```
-
-### **Option 2: Railway**
-
-```bash
-# 1. Push to GitHub
-git push origin main
-
-# 2. Import in Railway dashboard
-# 3. Add environment variables
-# 4. Deploy
-```
-
-### **Option 3: Docker**
-
-```bash
-cd frontend
-docker build -t bassirai .
-docker run -p 3000:3000 bassirai
-```
-
----
-
-## 🔌 **Integrations**
-
-### **WhatsApp Business API**
-
-1. Get credentials from [Meta for Developers](https://developers.facebook.com/)
-2. Set up webhook in n8n (see `bassirai-mvp/n8n-workflows/`)
-3. Configure in Settings page
-
-### **Groq AI (Llama 3.3)**
-
-```bash
-# Get API key from groq.com
-export GROQ_API_KEY=gsk_...
-
-# Add to n8n workflow:
-# - Groq Chat Model node
-# - Model: llama-3.3-70b-versatile
-# - Temperature: 0.7
-```
-
-### **Pinecone (RAG Vector Store)**
-
-```bash
-# 1. Create index at pinecone.io
-# 2. Upload clinic documents (pricing PDFs, FAQs)
-# 3. Connect to n8n:
-#    - Pinecone Vector Store node
-#    - Namespace: zuri-lekki-ns
-```
-
-### **Cal.com (Booking)**
-
-```bash
-# 1. Create account at cal.com
-# 2. Get API key
-# 3. Set booking URL in Settings page
-```
-
----
-
-## 📊 **Architecture Flow**
-
-```
-┌─────────────────┐
-│  Patient sends  │
-│  WhatsApp msg   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  n8n Webhook    │ ← Receives POST from WhatsApp Cloud API
-│  (Automation)   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Check DB:      │ ← Is is_human_takeover = true?
-│  Human mode?    │
-└────────┬────────┘
-         │
-     ┌───┴───┐
-     │       │
-     │   ┌───▼─────────────┐
-     │   │  Groq API       │ ← AI generates reply
-     │   │  (Llama 3.3)    │
-     │   └───┬─────────────┘
-     │       │
-     │       ▼
-     │   ┌─────────────────┐
-     │   │  Pinecone RAG   │ ← Searches clinic knowledge
-     │   │  (Vector Store) │
-     │   └───┬─────────────┘
-     │       │
-     │   ┌───▼─────────────┐
-     │   │  Send AI reply  │
-     │   │  via WhatsApp   │
-     │   └─────────────────┘
-     │
-     ▼
-┌─────────────────┐
-│  Queue for      │ ← Notify receptionist in Unified Inbox
-│  Human Reply    │
-└─────────────────┘
-```
-
----
-
-## 🛠️ **API Reference**
-
-### **POST /api/chats/toggle-takeover**
-
-Toggle AI/Human mode for a conversation.
-
-**Request:**
-
-```json
-{
-  "phone": "+234 803 123 4567",
-  "takeover": true
-}
-```
+**Purpose:** Verify API and database connectivity
 
 **Response:**
 
 ```json
 {
-  "success": true,
-  "is_human_takeover": true
+  "status": "healthy",
+  "timestamp": "2024-12-19T10:30:00.000Z",
+  "database": "connected",
+  "version": "1.0.0"
 }
 ```
 
----
+### Authentication
 
-### **POST /api/clinics/register**
+#### `POST /api/clinics/register`
 
-Create a new clinic during registration.
+**Purpose:** Create new clinic record during registration
 
-**Request:**
+**Request Body:**
 
 ```json
 {
   "clinicName": "Zuri Aesthetic Clinic",
-  "adminEmail": "admin@zuri.clinic"
+  "adminEmail": "admin@zuriclinic.com"
 }
 ```
 
@@ -376,25 +828,30 @@ Create a new clinic during registration.
 
 ```json
 {
-  "clinicId": "uuid-here",
-  "success": true
+  "clinicId": "d8c47b56-c0c2-488f-a9eb-88fb7c8c3e80",
+  "success": true,
+  "message": "Clinic profile created successfully"
 }
 ```
 
----
+**Validation:**
 
-### **POST /api/users/register**
+- Clinic name: 2-200 characters
+- Email format check
+- Duplicate email check
 
-Link auth user to clinic after signup.
+#### `POST /api/users/register`
 
-**Request:**
+**Purpose:** Create user profile after Supabase Auth signup
+
+**Request Body:**
 
 ```json
 {
   "userId": "auth-user-id",
-  "clinicId": "clinic-uuid",
-  "email": "user@clinic.com",
-  "fullName": "John Doe",
+  "clinicId": "clinic-id",
+  "email": "admin@zuriclinic.com",
+  "fullName": "Babajide Benson",
   "role": "clinic_admin"
 }
 ```
@@ -403,29 +860,49 @@ Link auth user to clinic after signup.
 
 ```json
 {
-  "success": true
+  "success": true,
+  "message": "User profile linked to database successfully"
 }
 ```
 
----
+**Validation:**
 
-### **POST /api/clinics/onboard**
+- UUID format check
+- Email format check
+- Full name: 2-100 characters
+- Role: must be `clinic_admin` or `receptionist`
 
-Save clinic settings (catalog, FAQs, etc.).
+### Onboarding
 
-**Request:**
+#### `POST /api/clinics/onboard`
+
+**Purpose:** Save onboarding wizard data (Steps 1-6)
+
+**Request Body:**
 
 ```json
 {
-  "userId": "auth-user-id",
-  "clinicName": "Zuri Clinic",
+  "userId": "user-id",
+  "clinicName": "Zuri Aesthetic Clinic",
   "aiTone": "professional",
+  "primaryLang": "en",
+  "enabledPlatforms": ["whatsapp", "instagram"],
+  "waPhoneId": "10982390192830",
+  "waAccId": "9812739012389",
+  "waToken": "EAAGy...token",
+  "instaUsername": "@zuri.clinic",
+  "instaToken": "IGAAxxxxx",
+  "fbPageId": "123456789",
+  "fbToken": "EAAGxxxxx",
   "catalog": [
-    { "name": "Botox", "price": "₦180,000-300,000", "description": "..." }
+    { "name": "Botox", "price": "₦180,000", "description": "Forehead lines" }
   ],
   "faqs": [
-    { "question": "Do you offer parking?", "answer": "Yes, free parking..." }
-  ]
+    { "question": "Do you offer parking?", "answer": "Yes, free parking." }
+  ],
+  "bookingStrategy": "callback",
+  "calComUrl": "",
+  "calComApiKey": ""
 }
 ```
 
@@ -433,116 +910,559 @@ Save clinic settings (catalog, FAQs, etc.).
 
 ```json
 {
-  "success": true
+  "success": true,
+  "message": "Clinic settings updated successfully"
 }
 ```
 
----
+**Database Operations:**
 
-## 📚 **Resources**
+1. Updates `clinics` table with name, tone, platform credentials
+2. Upserts `clinic_customizations` table with catalog, FAQs, custom prompt
 
-### **Documentation:**
+#### `GET /api/clinics/onboard?userId={userId}`
 
-- [Complete Layman Guide](./COMPREHENSIVE_GUIDE.md) - Explains every file
-- [Errors Fixed Checklist](./ERRORS_FIXED_CHECKLIST.md) - Testing guide
-- [MVP Blueprint PDF](./docs/mvp-bassirai.pdf) - Original spec
+**Purpose:** Retrieve existing onboarding data
 
-### **External Tools:**
+**Response:**
 
-- [Next.js Docs](https://nextjs.org/docs)
-- [Supabase Docs](https://supabase.com/docs)
-- [Groq API](https://console.groq.com/docs)
-- [n8n Workflows](https://n8n.io/workflows)
-- [Pinecone](https://docs.pinecone.io)
-
----
-
-## 🤝 **Contributing**
-
-### **How to Contribute:**
-
-1. Fork this repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### **Coding Standards:**
-
-- Use TypeScript strict mode
-- Follow ESLint rules
-- Add comments for complex logic
-- Write tests for new features
-
----
-
-## 📝 **Changelog**
-
-### **v1.0.0 - MVP Complete** (Current)
-
-- ✅ Login system with mock mode
-- ✅ Dashboard with analytics
-- ✅ Unified Inbox with chat threads
-- ✅ Human takeover toggle
-- ✅ Settings page (catalog, FAQs)
-- ✅ Responsive design
-- ✅ Database schema & RLS policies
-- ✅ API routes for all operations
-
-### **v1.1.0 - Planned**
-
-- ⏳ Real WhatsApp integration
-- ⏳ Groq AI connection
-- ⏳ Pinecone RAG setup
-- ⏳ Cal.com booking flow
-- ⏳ Real-time inbox updates
-
----
-
-## 🐛 **Known Issues**
-
-1. **No real-time updates** - Inbox requires manual refresh (waiting for Supabase Realtime integration)
-2. **Mock mode data persistence** - Clears on logout (use Supabase for production)
-3. **No pagination** - Inbox shows all conversations (add infinite scroll)
-4. **No search** - Can't search conversations by patient name (add search bar)
-
----
-
-## 📜 **License**
-
-This project is licensed under the MIT License.
-
-```
-Copyright (c) 2026 BassirAI
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction...
+```json
+{
+  "success": true,
+  "clinicName": "Zuri Aesthetic Clinic",
+  "aiTone": "professional",
+  "primaryLang": "en",
+  "waPhoneId": "+234 803 123 4567",
+  "catalog": [...],
+  "faqs": [...],
+  "bookingStrategy": "callback",
+  "calComUrl": "",
+  "calComApiKey": ""
+}
 ```
 
----
+### Appointments
 
-## 🙏 **Acknowledgments**
+#### `GET /api/appointments/list`
 
-- **Design Inspiration:** modmed.com, hyro.ai, healthtap.com
-- **AI Provider:** Groq (Llama 3.3 70B inference)
-- **Database:** Supabase (PostgreSQL + Auth)
-- **Automation:** n8n (WhatsApp webhooks)
-- **Hosting:** Railway/Vercel (free tier)
+**Purpose:** Retrieve all appointments for authenticated user's clinic
 
----
-
-## 📞 **Support**
-
-- 📧 Email: support@bassirai.com
-- 💬 Discord: [Join Community](#)
-- 🐦 Twitter: [@BassirAI](#)
-- 📖 Docs: [bassirai.com/docs](#)
-
----
-
-**🎉 Built with ❤️ for aesthetic clinics in Africa**
+**Headers:**
 
 ```
-Made in Lagos 🇳🇬 | Powered by AI 🤖 | $0/month cost 💰
+Authorization: Bearer {supabase-jwt-token}
 ```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "appointments": [
+    {
+      "id": "uuid",
+      "patient_name": "Chioma Adebayo",
+      "patient_phone": "+234 803 123 4567",
+      "procedure": "Botox Consultation",
+      "appointment_date": "2024-12-20T14:00:00Z",
+      "status": "confirmed",
+      "notes": "First-time patient",
+      "conversation_id": "conv-uuid",
+      "created_at": "2024-12-19T10:00:00Z"
+    }
+  ]
+}
+```
+
+**Security:**
+
+- Requires authentication (Supabase JWT)
+- Enforces clinic_id from authenticated user
+- RLS policies enforce row-level isolation
+
+#### `POST /api/appointments/create`
+
+**Purpose:** Create new appointment
+
+**Request Body:**
+
+```json
+{
+  "patient_name": "Chioma Adebayo",
+  "patient_phone": "+234 803 123 4567",
+  "procedure": "Botox Treatment",
+  "appointment_date": "2024-12-20T14:00:00Z",
+  "notes": "Follow-up appointment",
+  "conversation_id": "conv-uuid"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "appointment": {
+    "id": "new-uuid",
+    ...
+  }
+}
+```
+
+**Validation:**
+
+- Phone number format: E.164 (+234...)
+- Date validation (not in past)
+- Patient name: 2-100 characters
+- Procedure: 2-200 characters
+- Notes: max 500 characters
+
+#### `PATCH /api/appointments/update`
+
+**Purpose:** Update appointment status or details
+
+**Request Body:**
+
+```json
+{
+  "appointmentId": "uuid",
+  "status": "confirmed",
+  "notes": "Updated notes"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Appointment updated successfully"
+}
+```
+
+**Validation:**
+
+- UUID format check
+- Status: must be `pending`, `confirmed`, `completed`, or `cancelled`
+- Updates `conversation` status to "booked" if status is confirmed
+
+### Conversations
+
+#### `POST /api/chats/toggle-takeover`
+
+**Purpose:** Toggle AI/Human mode for a conversation
+
+**Request Body:**
+
+```json
+{
+  "conversationId": "conv-uuid",
+  "isHumanTakeover": true
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Conversation mode updated to human takeover"
+}
+```
+
+**Security:**
+
+- Enforces clinic_id check (no cross-tenant access)
+- Updates `conversations.is_human_takeover` field
+
+### AI Generation
+
+#### `POST /api/ai/generate`
+
+**Purpose:** Generate AI response (used in Sandbox Step 6)
+
+**Request Body:**
+
+```json
+{
+  "message": "How much is Botox?",
+  "clinicId": "clinic-uuid"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "response": "Botox treatment at Zuri Clinic ranges from ₦180,000 to ₦300,000...",
+  "model": "llama-3.3-70b"
+}
+```
+
+**Note:** This is a simplified version. Production uses n8n workflow with RAG.
+
+---
+
+## 🔒 Security & Multi-Tenancy
+
+### Row Level Security (RLS)
+
+All tables have RLS policies enforcing clinic-level isolation:
+
+```sql
+-- Example: conversations table RLS policy
+CREATE POLICY "clinic_scope_select" ON conversations
+  FOR SELECT USING (
+    clinic_id = (
+      SELECT clinic_id FROM users WHERE id = auth.uid()
+    )
+  );
+
+CREATE POLICY "clinic_scope_insert" ON conversations
+  FOR INSERT WITH CHECK (
+    clinic_id = (
+      SELECT clinic_id FROM users WHERE id = auth.uid()
+    )
+  );
+```
+
+**Result:** Users can only see/modify data belonging to their clinic.
+
+### Authentication Flow
+
+1. **Registration:**
+   - User signs up with email/password
+   - Supabase creates auth user
+   - System creates clinic + user profile
+   - JWT token stored in httpOnly cookie
+
+2. **Login:**
+   - User provides email/password
+   - Supabase validates credentials
+   - JWT token issued and stored
+   - Token contains `user_id` → links to `clinic_id`
+
+3. **API Requests:**
+   - JWT included in Authorization header or cookie
+   - Server validates JWT with Supabase
+   - Extracts `user_id` → resolves to `clinic_id`
+   - RLS enforces clinic isolation
+
+### Input Validation
+
+All API routes validate input:
+
+- **UUID format:** `/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i`
+- **Email format:** `/^[^\s@]+@[^\s@]+\.[^\s@]+$/`
+- **Phone format:** E.164 format (`+234...`)
+- **String lengths:** Min/max character limits
+- **Enum values:** Status must match defined enums
+- **Array validation:** Enabled platforms must be array
+
+### XSS Protection
+
+- React automatically escapes rendered content
+- User input sanitized before database insertion
+- CSP headers configured in production
+
+### SQL Injection Protection
+
+- All queries use parameterized statements via Supabase client
+- No raw SQL string concatenation
+- ORM-style query builder
+
+---
+
+## ⚙️ Environment Configuration
+
+### Frontend Environment Variables
+
+File: `frontend/.env.local`
+
+```env
+# Supabase (Required)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Optional: Analytics
+NEXT_PUBLIC_VERCEL_ANALYTICS_ID=your-analytics-id
+```
+
+### Backend Environment Variables
+
+File: `bassirai-mvp/.env`
+
+```env
+# Database
+DB_USER=postgres
+DB_PASSWORD=your-postgres-password
+DB_NAME=bassirai_prod
+DB_PORT=5432
+
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# AI & RAG
+OPENAI_API_KEY=sk-proj-yourOpenAiApiKey (for embeddings)
+PINECONE_API_KEY=your-pinecone-api-key
+PINECONE_INDEX_NAME=bassirai-prod
+GROQ_API_KEY=gsk_yourGroqApiKey (Llama 3.3 70B)
+
+# Messaging Platforms
+WHATSAPP_TOKEN=your-whatsapp-access-token
+WHATSAPP_PHONE_ID=your-phone-id
+INSTAGRAM_ACCESS_TOKEN=your-instagram-token
+FACEBOOK_ACCESS_TOKEN=your-facebook-token
+
+# n8n
+N8N_ENCRYPTION_KEY=random-secure-string
+N8N_HOST=your-n8n-domain.com
+```
+
+---
+
+## 🚀 Deployment Guide
+
+### Deploy Frontend to Vercel
+
+1. **Push to GitHub**
+
+   ```bash
+   git add .
+   git commit -m "Production ready"
+   git push origin main
+   ```
+
+2. **Connect to Vercel**
+   - Go to [https://vercel.com](https://vercel.com)
+   - Import GitHub repository
+   - Select `frontend` as root directory
+   - Add environment variables from `.env.local`
+   - Deploy
+
+3. **Configure Custom Domain** (Optional)
+   - Add domain in Vercel dashboard
+   - Update DNS records
+
+### Deploy Database (Supabase)
+
+1. **Production Project**
+   - Create new Supabase project (production tier)
+   - Run database migrations:
+     ```sql
+     -- In SQL Editor:
+     1. schema.sql
+     2. rls-policies.sql
+     3. performance-indexes.sql
+     ```
+
+2. **Update Frontend Env**
+   - Update `NEXT_PUBLIC_SUPABASE_URL`
+   - Update `SUPABASE_SERVICE_ROLE_KEY`
+   - Redeploy Vercel
+
+### Deploy n8n (Railway/Docker)
+
+1. **Railway Deployment**
+   - Create new Railway project
+   - Add PostgreSQL service (for n8n data)
+   - Add n8n service with env vars
+   - Set up custom domain
+
+2. **Import Workflows**
+   - Open n8n UI
+   - Import `bassirai-mvp/n8n-workflows/ai-responder-rag.json`
+   - Configure webhooks with production URLs
+   - Activate workflows
+
+### Configure Platform APIs
+
+1. **WhatsApp Cloud API**
+   - Meta Developer Console → WhatsApp → Webhooks
+   - Set webhook URL: `https://your-n8n-domain.com/webhook/whatsapp-inbound`
+   - Subscribe to `messages` events
+   - Save access token to env vars
+
+2. **Instagram Graph API**
+   - Meta Developer Console → Instagram → Webhooks
+   - Configure messaging permissions
+   - Save access token to env vars
+
+3. **Facebook Messenger API**
+   - Meta Developer Console → Messenger → Webhooks
+   - Set webhook URL: `https://your-n8n-domain.com/webhook/facebook-inbound`
+   - Subscribe to messaging events
+   - Save page access token to env vars
+
+---
+
+## 🧪 Testing
+
+### Manual Testing Checklist
+
+#### Registration & Onboarding
+
+- [ ] Register new clinic
+- [ ] Verify redirect to onboarding
+- [ ] Complete all 6 onboarding steps
+- [ ] Test platform toggle (enable/disable)
+- [ ] Test catalog add/remove
+- [ ] Test FAQ add/remove
+- [ ] Test AI sandbox
+- [ ] Verify data saved to database
+
+#### Dashboard
+
+- [ ] View stats (should load from DB or show mock)
+- [ ] Click "Open Live Inbox" button
+- [ ] Navigate via sidebar
+
+#### Inbox
+
+- [ ] View conversation list
+- [ ] Filter by status
+- [ ] Filter by channel
+- [ ] Search by patient name
+- [ ] Open conversation thread
+- [ ] View message history
+- [ ] Toggle AI/Human mode
+- [ ] Send reply (if human mode)
+- [ ] Test real-time updates
+
+#### Appointments
+
+- [ ] Switch between List/Calendar/Timeline views
+- [ ] Create new appointment
+- [ ] Update appointment status
+- [ ] Delete appointment
+- [ ] Search appointments
+- [ ] Filter by status
+- [ ] Click calendar date (empty) → Opens create modal with pre-filled date
+- [ ] Click calendar date (with appointments) → Shows date details modal
+- [ ] Send WhatsApp reminder
+- [ ] Test stats card collapse (medium screens)
+
+#### Settings
+
+- [ ] Edit clinic name
+- [ ] Change AI tone
+- [ ] Toggle platforms
+- [ ] Update platform credentials
+- [ ] Edit catalog
+- [ ] Edit FAQs
+- [ ] Save changes
+- [ ] Verify changes persist after refresh
+
+#### Security
+
+- [ ] Cannot access pages without authentication
+- [ ] Cannot see other clinic's data
+- [ ] RLS policies enforce isolation
+- [ ] Invalid input rejected
+
+### API Testing
+
+Use tools like Postman or curl:
+
+```bash
+# Health check
+curl https://your-domain.com/api/health
+
+# Create appointment (requires auth)
+curl -X POST https://your-domain.com/api/appointments/create \
+  -H "Authorization: Bearer YOUR_JWT" \
+  -H "Content-Type: application/json" \
+  -d '{"patient_name":"Test","patient_phone":"+2348031234567","procedure":"Consultation","appointment_date":"2024-12-20T14:00:00Z"}'
+```
+
+---
+
+## 📚 Documentation Files
+
+Comprehensive docs are in the `docs/` folder:
+
+### Setup & Configuration
+
+- **`QUICK_START.md`** - Fast setup guide (5 minutes)
+- **`ENVIRONMENT_SETUP_GUIDE.md`** - Detailed environment configuration
+- **`PRODUCTION_READY_CHECKLIST.md`** - Pre-deployment checklist
+
+### Architecture & Design
+
+- **`COMPREHENSIVE_GUIDE.md`** - Layman explanation of every file
+- **`SYSTEM_FLOW_EXPLAINED.md`** - How the system works end-to-end
+- **`SYSTEM_FLOWCHART.md`** - Visual diagrams
+- **`PROJECT_STATUS.md`** - Current implementation status
+
+### Implementation Details
+
+- **`PLATFORM_INTEGRATION_IMPLEMENTATION.md`** - Platform selection feature
+- **`IMPLEMENTATION_SUMMARY.md`** - Quick reference for what's done
+- **`APPOINTMENTS_UPDATE.md`** - Appointments feature documentation
+
+### Security & Production
+
+- **`COMPLETE_SECURITY_AUDIT_SUMMARY.md`** - Security analysis
+- **`MULTI_TENANCY_SECURITY_AUDIT.md`** - Multi-tenancy verification
+- **`SECURITY_FIXES_APPLIED.md`** - Security enhancements
+- **`PRODUCTION_DEPLOYMENT_READY.md`** - Production readiness report
+- **`PRODUCTION_READY.md`** - Final production checklist
+
+### Migration & Roadmap
+
+- **`MOCK_TO_PRODUCTION_GUIDE.md`** - Transition from mock to live data
+- **`MISSING_FEATURES_ROADMAP.md`** - Future enhancements (Phase 1-4)
+- **`ERRORS_FIXED_CHECKLIST.md`** - Bug fixes and testing
+
+---
+
+## 🤝 Contributing
+
+This is a production MVP. For feature requests or bug reports:
+
+1. Check `docs/MISSING_FEATURES_ROADMAP.md` for planned features
+2. Open an issue with:
+   - Clear description
+   - Steps to reproduce (for bugs)
+   - Expected vs actual behavior
+   - Screenshots (if UI-related)
+
+---
+
+## 📄 License
+
+Proprietary - All rights reserved
+
+---
+
+## 👨‍💻 Developer
+
+**Project:** BassirAI MVP  
+**Developed By:** [Your Name/Team]  
+**Contact:** [Your Email]  
+**Repository:** [GitHub URL]  
+**Production URL:** [Live URL]
+
+---
+
+## 📞 Support
+
+For technical issues:
+
+- Check documentation in `docs/` folder
+- Review `COMPREHENSIVE_GUIDE.md` for file explanations
+- See `QUICK_START.md` for common setup issues
+
+---
+
+**Last Updated:** December 19, 2024  
+**Version:** 1.0.0  
+**Status:** ✅ Production Ready
+
+---
+
+_Built with ❤️ for aesthetic clinics in Africa_

@@ -52,7 +52,8 @@ export default function LoginPage() {
       document.cookie = "sb-mock-session=true; path=/; max-age=86400";
       document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
       document.cookie = "sb-onboarded=true; path=/; max-age=86400";
-      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
       document.cookie = `sb-mock-user-name=${encodeURIComponent(displayName)}; path=/; max-age=86400`;
       document.cookie = `sb-mock-user-role=${encodeURIComponent(roleName)}; path=/; max-age=86400`;
 
@@ -92,7 +93,8 @@ export default function LoginPage() {
             document.cookie = "sb-mock-session=true; path=/; max-age=86400";
             document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
             document.cookie = "sb-onboarded=true; path=/; max-age=86400";
-            document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+            document.cookie =
+              "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
             router.refresh();
             router.push("/dashboard");
             return;
@@ -103,38 +105,8 @@ export default function LoginPage() {
       } else {
         document.cookie = "sb-onboarded=true; path=/; max-age=86400";
         document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
-        document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-
-        // Check if returning user's clinic has customizations setup
-        if (data?.user) {
-          try {
-            const { data: userProf } = await supabase
-              .from("users")
-              .select("clinic_id")
-              .eq("id", data.user.id)
-              .maybeSingle();
-
-            if (userProf?.clinic_id) {
-              const { data: custom } = await supabase
-                .from("clinic_customizations")
-                .select("clinic_id")
-                .eq("clinic_id", userProf.clinic_id)
-                .maybeSingle();
-
-              if (!custom) {
-                // If user registered account previously but never completed onboarding
-                document.cookie = "sb-new-user=true; path=/; max-age=86400";
-                document.cookie = "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-                document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-                router.refresh();
-                router.push("/dashboard/onboarding");
-                return;
-              }
-            }
-          } catch (e) {
-            console.error("Error verifying customization status:", e);
-          }
-        }
+        document.cookie =
+          "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
         router.refresh();
         router.push("/dashboard");
@@ -161,128 +133,33 @@ export default function LoginPage() {
       return;
     }
 
-    const isPlaceholder =
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("your-project") ||
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.includes("placeholder");
+    // Clear any existing onboarded cookies to force onboarding
+    document.cookie =
+      "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+    document.cookie =
+      "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
-    if (isPlaceholder) {
-      setSuccessMsg(
-        'Registration mock successful! (Supabase is in placeholder mode, so no live DB entry was created. You can now switch to the Sign In tab and enter "benson@zuri.clinic" to log in).',
-      );
-      setLoading(false);
-      return;
-    }
+    // Set cookies and redirect to onboarding immediately
+    document.cookie = "sb-new-user=true; path=/; max-age=86400";
+    document.cookie = "sb-mock-session=true; path=/; max-age=86400";
+    document.cookie = `sb-mock-user-name=${encodeURIComponent(fullName)}; path=/; max-age=86400`;
+    document.cookie = "sb-mock-user-role=Clinic Admin; path=/; max-age=86400";
 
-    try {
-      // 1. Create the new Clinic record first
-      console.log("Step 1: Creating clinic record...");
-      const clinicRes = await fetch("/api/clinics/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clinicName, adminEmail: email }),
-      });
-
-      const clinicData = await clinicRes.json().catch(() => ({}));
-      console.log("Clinic registration response:", clinicData);
-
-      if (!clinicRes.ok) {
-        const errorMsg = clinicData?.error || "Failed to initialize clinic profile. Please check if this email is already registered.";
-        setErrorMsg(errorMsg);
-        setLoading(false);
-        return;
-      }
-
-      const { clinicId } = clinicData;
-      console.log("Clinic created with ID:", clinicId);
-
-      // 2. Register the user in Supabase Auth, passing clinic_id and role as options
-      console.log("Step 2: Creating auth user...");
-      const { data, error } = await supabase.auth.signUp({
+    // Store registration data
+    localStorage.setItem(
+      "pending_registration",
+      JSON.stringify({
+        clinicName,
+        fullName,
         email,
         password,
-        options: {
-          data: {
-            full_name: fullName,
-            clinic_id: clinicId,
-            role: "clinic_admin",
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
+      }),
+    );
 
-      if (error) {
-        console.error("Auth signup error:", error.message);
-        setErrorMsg(error.message);
-        setLoading(false);
-        return;
-      }
+    setLoading(false);
 
-      console.log("Auth user created:", data.user?.id);
-
-      if (data.user) {
-        // 3. Create the user record in our public 'users' table
-        console.log("Step 3: Creating user profile record...");
-        const userInsert = await fetch("/api/users/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: data.user.id,
-            clinicId,
-            email,
-            fullName,
-            role: "clinic_admin",
-          }),
-        });
-
-        const userInsertData = await userInsert.json().catch(() => ({}));
-        console.log("User profile response:", userInsertData);
-
-        if (!userInsert.ok) {
-          const userErr = userInsertData?.error || "Failed to link user profile to database";
-          setErrorMsg(userErr);
-          setLoading(false);
-          return;
-        }
-
-        console.log("Registration completed successfully!");
-        document.cookie = "sb-new-user=true; path=/; max-age=86400";
-        document.cookie = "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-        document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
-
-        if (data.session) {
-          // If session is active immediately upon signup, proceed to onboarding
-          router.refresh();
-          router.push("/dashboard/onboarding");
-          return;
-        }
-
-        setSuccessMsg(
-          "Registration successful! Please check your email to verify your account, or sign in to complete your clinic setup.",
-        );
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        if (err.message.includes("fetch")) {
-          setErrorMsg(
-            "Cannot connect to database. Check your Supabase URL in .env",
-          );
-        } else if (
-          err.message.includes("duplicate") ||
-          err.message.includes("already exists") ||
-          err.message.includes("registered")
-        ) {
-          setErrorMsg(
-            "This email or clinic is already registered. Try signing in instead.",
-          );
-        } else {
-          setErrorMsg(err.message);
-        }
-      } else {
-        setErrorMsg("An unexpected error occurred during sign up.");
-      }
-    } finally {
-      setLoading(false);
-    }
+    // Force hard redirect to onboarding (bypass router cache)
+    window.location.href = "/dashboard/onboarding";
   };
 
   return (
@@ -415,7 +292,7 @@ export default function LoginPage() {
             {loading ? (
               <span className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
             ) : isSignUp ? (
-              "Register Admin & Clinic"
+              "Continue to Setup"
             ) : (
               "Sign In"
             )}
