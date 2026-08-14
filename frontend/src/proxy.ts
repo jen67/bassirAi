@@ -1,16 +1,34 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
 type CookieToSet = {
-  name: string
-  value: string
-  options: Parameters<ReturnType<typeof NextResponse.next>['cookies']['set']>[2]
-}
+  name: string;
+  value: string;
+  options: Parameters<
+    ReturnType<typeof NextResponse.next>["cookies"]["set"]
+  >[2];
+};
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
-  })
+  });
+
+  // Check if Supabase env vars are set
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    console.error("Supabase environment variables not set");
+    // Allow access to login page even without Supabase
+    if (request.nextUrl.pathname === "/login") {
+      return supabaseResponse;
+    }
+    // Redirect to login for other pages
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,78 +36,85 @@ export async function proxy(request: NextRequest) {
     {
       cookies: {
         getAll() {
-          return request.cookies.getAll()
+          return request.cookies.getAll();
         },
         setAll(cookiesToSet: CookieToSet[]) {
-          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value),
+          );
           supabaseResponse = NextResponse.next({
             request,
-          })
+          });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+            supabaseResponse.cookies.set(name, value, options),
+          );
         },
       },
-    }
-  )
+    },
+  );
 
   let user = null;
 
-  if (request.cookies.get('sb-mock-session')?.value === 'true') {
-    user = { id: 'mock-user-id', email: 'benson@zuri.clinic' };
+  if (request.cookies.get("sb-mock-session")?.value === "true") {
+    user = { id: "mock-user-id", email: "benson@zuri.clinic" };
   } else {
     try {
       const {
         data: { user: supabaseUser },
-      } = await supabase.auth.getUser()
+      } = await supabase.auth.getUser();
       user = supabaseUser;
     } catch {
       // Ignore connection failures on placeholders
     }
   }
 
-  const url = request.nextUrl.clone()
+  const url = request.nextUrl.clone();
 
   // Protected paths
-  const isProtectedRoute = 
-    url.pathname.startsWith('/dashboard') || 
-    url.pathname.startsWith('/inbox') || 
-    url.pathname.startsWith('/settings') ||
-    url.pathname === '/'
+  const isProtectedRoute =
+    url.pathname.startsWith("/dashboard") ||
+    url.pathname.startsWith("/inbox") ||
+    url.pathname.startsWith("/appointments") ||
+    url.pathname.startsWith("/settings") ||
+    url.pathname === "/";
 
   if (isProtectedRoute && !user) {
-    url.pathname = '/login'
-    return NextResponse.redirect(url)
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
   }
 
   if (user) {
-    const isOnboarded = 
-      request.cookies.get('sb-onboarded')?.value === 'true' || 
-      request.cookies.get('sb-mock-onboarded')?.value === 'true';
+    const isOnboarded =
+      request.cookies.get("sb-onboarded")?.value === "true" ||
+      request.cookies.get("sb-mock-onboarded")?.value === "true";
 
-    const isNewUser = request.cookies.get('sb-new-user')?.value === 'true';
+    const isNewUser = request.cookies.get("sb-new-user")?.value === "true";
 
     if (isProtectedRoute) {
       // Redirect first-time users who have not completed onboarding to onboarding wizard
-      if (isNewUser && !isOnboarded && url.pathname !== '/dashboard/onboarding') {
-        url.pathname = '/dashboard/onboarding'
-        return NextResponse.redirect(url)
+      if (
+        isNewUser &&
+        !isOnboarded &&
+        url.pathname !== "/dashboard/onboarding"
+      ) {
+        url.pathname = "/dashboard/onboarding";
+        return NextResponse.redirect(url);
       }
 
       // Redirect onboarded users away from onboarding page to main dashboard
-      if (isOnboarded && url.pathname === '/dashboard/onboarding') {
-        url.pathname = '/dashboard'
-        return NextResponse.redirect(url)
+      if (isOnboarded && url.pathname === "/dashboard/onboarding") {
+        url.pathname = "/dashboard";
+        return NextResponse.redirect(url);
       }
     }
 
-    if (url.pathname === '/login' || url.pathname === '/') {
-      url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+    if (url.pathname === "/login" || url.pathname === "/") {
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
     }
   }
 
-  return supabaseResponse
+  return supabaseResponse;
 }
 
 export const config = {
@@ -100,7 +125,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - images, icons, svgs (static media)
+     * - api routes
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    "/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
-}
+};
