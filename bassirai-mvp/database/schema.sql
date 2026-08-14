@@ -17,9 +17,17 @@ CREATE TABLE clinics (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
+    
+    -- Platform Integration Fields
+    enabled_platforms JSONB DEFAULT '[]'::jsonb, -- ["whatsapp", "instagram", "facebook"]
     whatsapp_number TEXT,
+    whatsapp_phone_id TEXT,
+    whatsapp_token TEXT,
     instagram_username TEXT,
+    instagram_access_token TEXT,
     facebook_page_id TEXT,
+    facebook_access_token TEXT,
+    
     ai_mode BOOLEAN DEFAULT TRUE,
     tone_of_voice TEXT DEFAULT 'professional',
     is_active BOOLEAN DEFAULT TRUE,

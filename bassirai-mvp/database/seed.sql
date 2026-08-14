@@ -2,13 +2,30 @@
 -- Initial Seed Data for BassirAI Localized for African Context
 
 -- 1. Insert Zuri Clinic Metadata
-INSERT INTO clinics (id, name, email, phone, whatsapp_number, instagram_username, facebook_page_id, ai_mode, tone_of_voice, is_active)
+INSERT INTO clinics (
+    id, 
+    name, 
+    email, 
+    phone, 
+    enabled_platforms,
+    whatsapp_number,
+    whatsapp_phone_id,
+    whatsapp_token,
+    instagram_username, 
+    facebook_page_id, 
+    ai_mode, 
+    tone_of_voice, 
+    is_active
+)
 VALUES (
     'd8c47b56-c0c2-488f-a9eb-88fb7c8c3e80',
     'Zuri Aesthetic & Wellness Clinic',
     'hello@zuri.clinic',
     '+234 1 234 5678',
+    '["whatsapp", "instagram", "facebook"]'::jsonb,
     '+234 803 123 4567',
+    '10982390192830',
+    'EAAGy...test_token',
     'zuri.clinic.lekki',
     'zuri_aesthetic_page',
     TRUE,

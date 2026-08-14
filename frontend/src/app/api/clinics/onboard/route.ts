@@ -21,7 +21,13 @@ export async function POST(request: Request) {
       clinicName,
       aiTone,
       primaryLang,
+      enabledPlatforms,
       waPhoneId,
+      waToken,
+      instaUsername,
+      instaToken,
+      fbPageId,
+      fbToken,
       catalog,
       faqs,
       bookingStrategy,
@@ -91,6 +97,14 @@ export async function POST(request: Request) {
       );
     }
 
+    // Validate enabled platforms
+    if (enabledPlatforms && !Array.isArray(enabledPlatforms)) {
+      return NextResponse.json(
+        { error: "Enabled platforms must be an array" },
+        { status: 400 },
+      );
+    }
+
     const supabase = await createClient();
 
     // Get user's clinic_id from auth metadata or users table
@@ -109,13 +123,20 @@ export async function POST(request: Request) {
 
     const clinicId = userData.clinic_id;
 
-    // Update clinic basic info
+    // Update clinic basic info with platform credentials
     const { error: clinicError } = await supabase
       .from("clinics")
       .update({
         name: clinicName,
         tone_of_voice: aiTone,
+        enabled_platforms: enabledPlatforms || [],
         whatsapp_number: waPhoneId || null,
+        whatsapp_phone_id: waPhoneId || null,
+        whatsapp_token: waToken || null,
+        instagram_username: instaUsername || null,
+        instagram_access_token: instaToken || null,
+        facebook_page_id: fbPageId || null,
+        facebook_access_token: fbToken || null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", clinicId);
@@ -208,10 +229,7 @@ export async function GET(request: Request) {
       .single();
 
     if (clinicError || !clinic) {
-      return NextResponse.json(
-        { error: "Clinic not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Clinic not found" }, { status: 404 });
     }
 
     // 3. Fetch customizations
@@ -231,14 +249,13 @@ export async function GET(request: Request) {
       faqs: customizations?.faqs || [],
       bookingStrategy: "callback",
       calComUrl: "",
-      calComApiKey: ""
+      calComApiKey: "",
     });
   } catch (err: unknown) {
     console.error("Fetch settings error:", err);
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Failed to load settings",
+        error: err instanceof Error ? err.message : "Failed to load settings",
       },
       { status: 500 },
     );

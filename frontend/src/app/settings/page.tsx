@@ -27,9 +27,19 @@ export default function SettingsPage() {
   const [aiTone, setAiTone] = useState("professional");
   const [primaryLang, setPrimaryLang] = useState("en");
 
+  // Platform selection states
+  const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([]);
+
+  // Platform credentials
   const [waPhoneId, setWaPhoneId] = useState("");
   const [waAccId, setWaAccId] = useState("");
   const [waToken, setWaToken] = useState("");
+
+  const [instaUsername, setInstaUsername] = useState("");
+  const [instaToken, setInstaToken] = useState("");
+
+  const [fbPageId, setFbPageId] = useState("");
+  const [fbToken, setFbToken] = useState("");
 
   const [catalog, setCatalog] = useState<CatalogItem[]>([]);
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
@@ -41,6 +51,15 @@ export default function SettingsPage() {
   const [calComApiKey, setCalComApiKey] = useState("");
 
   const [isPlaceholder, setIsPlaceholder] = useState(true);
+
+  // Platform toggle handler
+  const togglePlatform = (platform: string) => {
+    if (enabledPlatforms.includes(platform)) {
+      setEnabledPlatforms(enabledPlatforms.filter((p) => p !== platform));
+    } else {
+      setEnabledPlatforms([...enabledPlatforms, platform]);
+    }
+  };
 
   // Load current settings from localStorage or live API
   useEffect(() => {
@@ -59,9 +78,14 @@ export default function SettingsPage() {
             setClinicName(data.clinicName || "Zuri Aesthetic Clinic");
             setAiTone(data.aiTone || "professional");
             setPrimaryLang(data.primaryLang || "en");
+            setEnabledPlatforms(data.enabledPlatforms || []);
             setWaPhoneId(data.waPhoneId || "");
             setWaAccId(data.waAccId || "");
             setWaToken(data.waToken || "");
+            setInstaUsername(data.instaUsername || "");
+            setInstaToken(data.instaToken || "");
+            setFbPageId(data.fbPageId || "");
+            setFbToken(data.fbToken || "");
             setCatalog(data.catalog || []);
             setFaqs(data.faqs || []);
             setBookingStrategy(data.bookingStrategy || "callback");
@@ -147,9 +171,14 @@ export default function SettingsPage() {
       clinicName,
       aiTone,
       primaryLang,
+      enabledPlatforms,
       waPhoneId,
       waAccId,
       waToken,
+      instaUsername,
+      instaToken,
+      fbPageId,
+      fbToken,
       catalog,
       faqs,
       bookingStrategy,
@@ -252,7 +281,228 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 2: Catalog list */}
+          {/* Section 4: Platform Integrations */}
+          <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
+            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
+              Platform Integrations
+            </h3>
+
+            <div className="space-y-3">
+              {/* WhatsApp Card */}
+              <div
+                className={`border rounded-xl p-4 transition-all ${
+                  enabledPlatforms.includes("whatsapp")
+                    ? "border-[#D4AF37] bg-[#D4AF37]/5"
+                    : "border-slate-800 bg-slate-950/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                      <span className="text-base">📱</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">WhatsApp Business</h4>
+                      <p className="text-[10px] text-slate-400">
+                        Meta Cloud API
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => togglePlatform("whatsapp")}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      enabledPlatforms.includes("whatsapp")
+                        ? "bg-[#D4AF37]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        enabledPlatforms.includes("whatsapp")
+                          ? "translate-x-6"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {enabledPlatforms.includes("whatsapp") && (
+                  <div className="space-y-3 pt-3 border-t border-slate-800">
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Phone Number ID
+                      </label>
+                      <input
+                        type="text"
+                        value={waPhoneId}
+                        onChange={(e) => setWaPhoneId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Business Account ID
+                      </label>
+                      <input
+                        type="text"
+                        value={waAccId}
+                        onChange={(e) => setWaAccId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Access Token
+                      </label>
+                      <input
+                        type="password"
+                        value={waToken}
+                        onChange={(e) => setWaToken(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Instagram Card */}
+              <div
+                className={`border rounded-xl p-4 transition-all ${
+                  enabledPlatforms.includes("instagram")
+                    ? "border-[#D4AF37] bg-[#D4AF37]/5"
+                    : "border-slate-800 bg-slate-950/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                      <span className="text-base">📷</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Instagram DM</h4>
+                      <p className="text-[10px] text-slate-400">
+                        Meta Graph API
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => togglePlatform("instagram")}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      enabledPlatforms.includes("instagram")
+                        ? "bg-[#D4AF37]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        enabledPlatforms.includes("instagram")
+                          ? "translate-x-6"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {enabledPlatforms.includes("instagram") && (
+                  <div className="space-y-3 pt-3 border-t border-slate-800">
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Instagram Username
+                      </label>
+                      <input
+                        type="text"
+                        value={instaUsername}
+                        onChange={(e) => setInstaUsername(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Access Token
+                      </label>
+                      <input
+                        type="password"
+                        value={instaToken}
+                        onChange={(e) => setInstaToken(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Facebook Card */}
+              <div
+                className={`border rounded-xl p-4 transition-all ${
+                  enabledPlatforms.includes("facebook")
+                    ? "border-[#D4AF37] bg-[#D4AF37]/5"
+                    : "border-slate-800 bg-slate-950/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <span className="text-base">💬</span>
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Facebook Messenger</h4>
+                      <p className="text-[10px] text-slate-400">
+                        Messenger API
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => togglePlatform("facebook")}
+                    className={`relative w-12 h-6 rounded-full transition-colors ${
+                      enabledPlatforms.includes("facebook")
+                        ? "bg-[#D4AF37]"
+                        : "bg-slate-700"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                        enabledPlatforms.includes("facebook")
+                          ? "translate-x-6"
+                          : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {enabledPlatforms.includes("facebook") && (
+                  <div className="space-y-3 pt-3 border-t border-slate-800">
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Page ID
+                      </label>
+                      <input
+                        type="text"
+                        value={fbPageId}
+                        onChange={(e) => setFbPageId(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-slate-400 text-xs font-semibold mb-1">
+                        Page Access Token
+                      </label>
+                      <input
+                        type="password"
+                        value={fbToken}
+                        onChange={(e) => setFbToken(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2 px-3 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section 5: Services Catalog */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
@@ -314,7 +564,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {/* Section 3: FAQs */}
+          {/* Section 6: FAQs */}
           <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
@@ -362,51 +612,6 @@ export default function SettingsPage() {
                   </button>
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* Section 4: WhatsApp Credentials */}
-          <div className="bg-slate-900/40 border border-slate-900/60 p-6 rounded-2xl space-y-4">
-            <h3 className="text-xs font-bold text-[#D4AF37] uppercase tracking-wider">
-              WhatsApp Developer Credentials
-            </h3>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-1">
-                    Phone Number ID
-                  </label>
-                  <input
-                    type="text"
-                    value={waPhoneId}
-                    onChange={(e) => setWaPhoneId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2.5 px-3.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-400 text-xs font-semibold mb-1">
-                    Business Account ID
-                  </label>
-                  <input
-                    type="text"
-                    value={waAccId}
-                    onChange={(e) => setWaAccId(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2.5 px-3.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-slate-400 text-xs font-semibold mb-1">
-                  Access Token
-                </label>
-                <input
-                  type="password"
-                  value={waToken}
-                  onChange={(e) => setWaToken(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-850 rounded-lg py-2.5 px-3.5 text-xs text-white focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
             </div>
           </div>
 
