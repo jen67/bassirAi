@@ -1,7 +1,7 @@
 # BassirAI - AI-Powered Patient Communication Platform
 
 **Production-Ready MVP**  
-**Last Updated:** December 19, 2024  
+**Last Updated:** August 13, 2026  
 **Version:** 1.0.0  
 **Status:** ✅ Production Ready
 
@@ -107,6 +107,18 @@ BassirAI is an AI-powered patient communication platform designed specifically f
   - Step 6: AI Sandbox (test the AI agent)
 - [x] Mock mode for development without database
 
+### n8n Automation ✅
+
+- [x] Complete workflow imported and tested
+- [x] Intent classification (5 categories: booking, FAQ, greeting, complaint, human_support)
+- [x] Groq Llama 3.3 70B integration (all nodes configured)
+- [x] Booking information extraction with structured JSON output
+- [x] Google Sheets logging (automatic spreadsheet updates)
+- [x] Email notifications for complex bookings
+- [x] Multi-language support framework (English, Arabic ready)
+- [x] Webhook endpoint: `/webhook/d4cee446-c445-49f7-b402-e7f27e4827a3`
+- [x] Response time: <1 second per message
+
 ### Dashboard ✅
 
 - [x] Real-time statistics (conversations, AI automation rate, escalations, bookings)
@@ -177,8 +189,12 @@ BassirAI is an AI-powered patient communication platform designed specifically f
 - **Database:** PostgreSQL (via Supabase)
 - **Auth:** Supabase Auth (JWT-based)
 - **API:** Next.js API Routes (serverless)
-- **Automation:** n8n (self-hosted)
-- **AI Model:** Groq Llama 3.3 70B
+- **Automation:** n8n (self-hosted workflow engine)
+  - **Version:** Latest (2024+)
+  - **Workflows:** BassirAI-n8n.json (complete automation)
+  - **Triggers:** Webhook-based (WhatsApp/Instagram/Facebook)
+  - **Integrations:** Groq AI, Google Sheets, Gmail
+- **AI Model:** Groq Llama 3.3 70B (via n8n HTTP requests)
 - **Vector DB:** Pinecone (RAG knowledge retrieval)
 - **File Storage:** Google Drive (for RAG ingestion)
 
@@ -218,8 +234,10 @@ bassirai-mvp/
 │   │   ├── docker-compose.yml      # n8n + PostgreSQL containers
 │   │   └── .env
 │   ├── n8n-workflows/
-│   │   ├── ai-responder-rag.json   # Main AI workflow
-│   │   ├── rag-loader-workflow.json
+│   │   ├── BassirAI-n8n.json       # **PRODUCTION WORKFLOW** ⭐
+│   │   ├── N8N_INTEGRATION_COMPLETE_GUIDE.md # Complete setup guide
+│   │   ├── ai-responder-rag.json   # Legacy workflow (archived)
+│   │   ├── rag-loader-workflow.json # Knowledge base loader
 │   │   └── n8n_integration_guide.md
 │   └── .env.example
 │
@@ -792,6 +810,47 @@ CREATE TYPE appt_status AS ENUM ('pending', 'confirmed', 'completed', 'cancelled
 
 All API routes are in `frontend/src/app/api/`. They use Next.js 14 Route Handlers.
 
+### n8n Webhook Integration
+
+#### `POST /webhook/d4cee446-c445-49f7-b402-e7f27e4827a3`
+
+**Purpose:** Receive incoming WhatsApp/Instagram/Facebook messages
+
+**Workflow:** See `bassirai-mvp/n8n-workflows/BassirAI-n8n.json`
+
+**Request Body:**
+
+```json
+{
+  "userId": "patient-id",
+  "name": "Ahmed Ali",
+  "phone": "+971501234567",
+  "channel": "whatsapp",
+  "language": "en",
+  "message": "Hello, I want to book a consultation for Botox."
+}
+```
+
+**Processing Flow:**
+
+1. Intent Classification (Groq AI)
+2. Routing to specialized handlers
+3. Response generation
+4. Database logging (Google Sheets)
+5. Optional staff notification (email)
+
+**Response:**
+
+```json
+{
+  "ai_response": "Hello Ahmed! I'd be happy to help you book a Botox consultation...",
+  "intent": "booking",
+  "channel": "whatsapp"
+}
+```
+
+**Documentation:** `bassirai-mvp/n8n-workflows/N8N_INTEGRATION_COMPLETE_GUIDE.md`
+
 ### Health Check
 
 #### `GET /api/health`
@@ -803,7 +862,7 @@ All API routes are in `frontend/src/app/api/`. They use Next.js 14 Route Handler
 ```json
 {
   "status": "healthy",
-  "timestamp": "2024-12-19T10:30:00.000Z",
+  "timestamp": "2026-08-13T10:30:00.000Z",
   "database": "connected",
   "version": "1.0.0"
 }
@@ -964,11 +1023,11 @@ Authorization: Bearer {supabase-jwt-token}
       "patient_name": "Chioma Adebayo",
       "patient_phone": "+234 803 123 4567",
       "procedure": "Botox Consultation",
-      "appointment_date": "2024-12-20T14:00:00Z",
+      "appointment_date": "2026-08-14T14:00:00Z",
       "status": "confirmed",
       "notes": "First-time patient",
       "conversation_id": "conv-uuid",
-      "created_at": "2024-12-19T10:00:00Z"
+      "created_at": "2026-08-13T10:00:00Z"
     }
   ]
 }
@@ -991,7 +1050,7 @@ Authorization: Bearer {supabase-jwt-token}
   "patient_name": "Chioma Adebayo",
   "patient_phone": "+234 803 123 4567",
   "procedure": "Botox Treatment",
-  "appointment_date": "2024-12-20T14:00:00Z",
+  "appointment_date": "2026-08-14T14:00:00Z",
   "notes": "Follow-up appointment",
   "conversation_id": "conv-uuid"
 }
@@ -1207,10 +1266,10 @@ SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 # AI & RAG
-OPENAI_API_KEY=sk-proj-yourOpenAiApiKey (for embeddings)
+GROQ_API_KEY=gsk_yourGroqApiKey
+OPENAI_API_KEY=sk-proj-yourOpenAiApiKey (for embeddings only)
 PINECONE_API_KEY=your-pinecone-api-key
 PINECONE_INDEX_NAME=bassirai-prod
-GROQ_API_KEY=gsk_yourGroqApiKey (Llama 3.3 70B)
 
 # Messaging Platforms
 WHATSAPP_TOKEN=your-whatsapp-access-token
@@ -1219,8 +1278,12 @@ INSTAGRAM_ACCESS_TOKEN=your-instagram-token
 FACEBOOK_ACCESS_TOKEN=your-facebook-token
 
 # n8n
-N8N_ENCRYPTION_KEY=random-secure-string
+N8N_ENCRYPTION_KEY=random-secure-string-min-32-chars
 N8N_HOST=your-n8n-domain.com
+N8N_WEBHOOK_URL=https://your-n8n-domain.com/webhook/d4cee446-c445-49f7-b402-e7f27e4827a3
+
+# Email Notifications (for n8n)
+CLINIC_EMAIL=tsd@naskamireglobal.com
 ```
 
 ---
@@ -1267,17 +1330,57 @@ N8N_HOST=your-n8n-domain.com
 
 ### Deploy n8n (Railway/Docker)
 
-1. **Railway Deployment**
-   - Create new Railway project
-   - Add PostgreSQL service (for n8n data)
-   - Add n8n service with env vars
-   - Set up custom domain
+1. **Railway Deployment (Recommended)**
 
-2. **Import Workflows**
-   - Open n8n UI
-   - Import `bassirai-mvp/n8n-workflows/ai-responder-rag.json`
-   - Configure webhooks with production URLs
-   - Activate workflows
+   ```bash
+   # Fork and deploy using Railway template
+   railway init
+   railway add postgresql
+   railway add n8n
+
+   # Set environment variables
+   railway variables set N8N_ENCRYPTION_KEY=$(openssl rand -base64 32)
+   railway variables set N8N_HOST=your-n8n-domain.railway.app
+   railway variables set GROQ_API_KEY=gsk_yourGroqApiKey
+
+   # Deploy
+   railway up
+   ```
+
+2. **Import BassirAI Workflow**
+   - Open n8n UI: `https://your-n8n-domain.railway.app`
+   - Go to **Workflows** → **Import from File**
+   - Select `bassirai-mvp/n8n-workflows/BassirAI-n8n.json`
+   - Configure credentials:
+     - Groq API (get from https://console.groq.com)
+     - Google Sheets OAuth2
+     - Gmail OAuth2
+   - **Activate** the workflow
+
+3. **Get Webhook URL**
+   - Click on "Incoming Message Webhook" node
+   - Copy **Production URL**:
+     ```
+     https://your-n8n-domain.railway.app/webhook/d4cee446-c445-49f7-b402-e7f27e4827a3
+     ```
+
+4. **Test the Workflow**
+   ```bash
+   curl -X POST https://your-n8n-domain.railway.app/webhook/d4cee446-c445-49f7-b402-e7f27e4827a3 \
+     -H "Content-Type: application/json" \
+     -d '{
+       "body": {
+         "userId": "test-123",
+         "name": "Test Patient",
+         "phone": "+2348031234567",
+         "channel": "whatsapp",
+         "language": "en",
+         "message": "Hello, I want to book Botox"
+       }
+     }'
+   ```
+
+**📚 Complete n8n Integration Guide:** `bassirai-mvp/n8n-workflows/N8N_INTEGRATION_COMPLETE_GUIDE.md`
 
 ### Configure Platform APIs
 
@@ -1376,7 +1479,7 @@ curl https://your-domain.com/api/health
 curl -X POST https://your-domain.com/api/appointments/create \
   -H "Authorization: Bearer YOUR_JWT" \
   -H "Content-Type: application/json" \
-  -d '{"patient_name":"Test","patient_phone":"+2348031234567","procedure":"Consultation","appointment_date":"2024-12-20T14:00:00Z"}'
+  -d '{"patient_name":"Test","patient_phone":"+2348031234567","procedure":"Consultation","appointment_date":"2026-08-14T14:00:00Z"}'
 ```
 
 ---
@@ -1403,6 +1506,13 @@ Comprehensive docs are in the `docs/` folder:
 - **`PLATFORM_INTEGRATION_IMPLEMENTATION.md`** - Platform selection feature
 - **`IMPLEMENTATION_SUMMARY.md`** - Quick reference for what's done
 - **`APPOINTMENTS_UPDATE.md`** - Appointments feature documentation
+- **`bassirai-mvp/n8n-workflows/N8N_INTEGRATION_COMPLETE_GUIDE.md`** - n8n automation guide
+
+### n8n Workflows
+
+- **`bassirai-mvp/n8n-workflows/BassirAI-n8n.json`** - Complete production workflow
+- **`bassirai-mvp/n8n-workflows/N8N_INTEGRATION_COMPLETE_GUIDE.md`** - Detailed setup guide
+- **`bassirai-mvp/n8n-workflows/n8n_integration_guide.md`** - Quick reference
 
 ### Security & Production
 
@@ -1459,7 +1569,7 @@ For technical issues:
 
 ---
 
-**Last Updated:** December 19, 2024  
+**Last Updated:** August 13, 2026  
 **Version:** 1.0.0  
 **Status:** ✅ Production Ready
 
