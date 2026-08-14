@@ -181,14 +181,14 @@ export default function LoginPage() {
         body: JSON.stringify({ clinicName, adminEmail: email }),
       });
 
-      const clinicData = await clinicRes.json();
+      const clinicData = await clinicRes.json().catch(() => ({}));
       console.log("Clinic registration response:", clinicData);
 
       if (!clinicRes.ok) {
-        console.error("Clinic registration failed:", clinicData);
-        throw new Error(
-          clinicData.error || "Failed to initialize clinic profile",
-        );
+        const errorMsg = clinicData?.error || "Failed to initialize clinic profile. Please check if this email is already registered.";
+        setErrorMsg(errorMsg);
+        setLoading(false);
+        return;
       }
 
       const { clinicId } = clinicData;
@@ -210,8 +210,10 @@ export default function LoginPage() {
       });
 
       if (error) {
-        console.error("Auth signup error:", error);
-        throw error;
+        console.error("Auth signup error:", error.message);
+        setErrorMsg(error.message);
+        setLoading(false);
+        return;
       }
 
       console.log("Auth user created:", data.user?.id);
@@ -231,14 +233,14 @@ export default function LoginPage() {
           }),
         });
 
-        const userInsertData = await userInsert.json();
+        const userInsertData = await userInsert.json().catch(() => ({}));
         console.log("User profile response:", userInsertData);
 
         if (!userInsert.ok) {
-          console.error("User profile creation failed:", userInsertData);
-          throw new Error(
-            userInsertData.error || "Failed to link user profile to database",
-          );
+          const userErr = userInsertData?.error || "Failed to link user profile to database";
+          setErrorMsg(userErr);
+          setLoading(false);
+          return;
         }
 
         console.log("Registration completed successfully!");
@@ -246,20 +248,30 @@ export default function LoginPage() {
         document.cookie = "sb-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
         document.cookie = "sb-mock-onboarded=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
+        if (data.session) {
+          // If session is active immediately upon signup, proceed to onboarding
+          router.refresh();
+          router.push("/dashboard/onboarding");
+          return;
+        }
+
         setSuccessMsg(
           "Registration successful! Please check your email to verify your account, or sign in to complete your clinic setup.",
         );
       }
     } catch (err: unknown) {
-      // Better error handling with detailed messages
       if (err instanceof Error) {
         if (err.message.includes("fetch")) {
           setErrorMsg(
-            "Cannot connect to database. Check your Supabase URL in .env.local",
+            "Cannot connect to database. Check your Supabase URL in .env",
           );
-        } else if (err.message.includes("duplicate")) {
+        } else if (
+          err.message.includes("duplicate") ||
+          err.message.includes("already exists") ||
+          err.message.includes("registered")
+        ) {
           setErrorMsg(
-            "This email is already registered. Try signing in instead.",
+            "This email or clinic is already registered. Try signing in instead.",
           );
         } else {
           setErrorMsg(err.message);
