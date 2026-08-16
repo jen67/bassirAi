@@ -30,9 +30,26 @@ export default function OnboardingPage() {
   const [errorMsg, setErrorMsg] = useState("");
 
   // Form states
-  const [clinicName, setClinicName] = useState("Zuri Aesthetic Clinic");
+  const [clinicName, setClinicName] = useState("");
   const [aiTone, setAiTone] = useState("professional");
   const [primaryLang, setPrimaryLang] = useState("en");
+
+  // Load clinic name from registration if available
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const registrationData = localStorage.getItem("pending_registration");
+      if (registrationData) {
+        try {
+          const data = JSON.parse(registrationData);
+          if (data.clinicName) {
+            setClinicName(data.clinicName);
+          }
+        } catch (e) {
+          console.error("Failed to parse registration data:", e);
+        }
+      }
+    }
+  }, []);
 
   // Platform selection states
   const [enabledPlatforms, setEnabledPlatforms] = useState<string[]>([
@@ -239,7 +256,8 @@ export default function OnboardingPage() {
       localStorage.setItem("zuri_onboarding_state", JSON.stringify(payload));
       document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
       document.cookie = "sb-onboarded=true; path=/; max-age=86400";
-      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
       setTimeout(() => {
         router.refresh();
@@ -269,7 +287,8 @@ export default function OnboardingPage() {
       // Write live onboarded cookie & clear new-user cookie
       document.cookie = "sb-onboarded=true; path=/; max-age=86400";
       document.cookie = "sb-mock-onboarded=true; path=/; max-age=86400";
-      document.cookie = "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+      document.cookie =
+        "sb-new-user=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
 
       router.refresh();
       router.push("/dashboard");

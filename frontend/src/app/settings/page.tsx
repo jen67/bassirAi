@@ -78,7 +78,7 @@ export default function SettingsPage() {
             setClinicName(data.clinicName || "Zuri Aesthetic Clinic");
             setAiTone(data.aiTone || "professional");
             setPrimaryLang(data.primaryLang || "en");
-            setEnabledPlatforms(data.enabledPlatforms || []);
+            setEnabledPlatforms(data.enabledPlatforms || ["whatsapp"]);
             setWaPhoneId(data.waPhoneId || "");
             setWaAccId(data.waAccId || "");
             setWaToken(data.waToken || "");
@@ -103,21 +103,45 @@ export default function SettingsPage() {
           } = await auth.getUser();
           if (!user) return;
 
-          // Load clinic details and customizations from database
-          const response = await fetch(
-            "/api/clinics/onboard?userId=" + user.id,
-          );
-          if (response.ok) {
-            const data = await response.json();
-            setClinicName(data.clinicName || "");
-            setAiTone(data.aiTone || "professional");
-            setPrimaryLang(data.primaryLang || "en");
-            setWaPhoneId(data.waPhoneId || "");
-            setCatalog(data.catalog || []);
-            setFaqs(data.faqs || []);
-            setBookingStrategy(data.bookingStrategy || "callback");
-            setCalComUrl(data.calComUrl || "");
-            setCalComApiKey(data.calComApiKey || "");
+          // Get user's clinic ID first
+          const { data: userData } = await supabase
+            .from("users")
+            .select("clinic_id")
+            .eq("id", user.id)
+            .single();
+
+          if (!userData?.clinic_id) return;
+
+          // Load clinic details
+          const { data: clinicData } = await supabase
+            .from("clinics")
+            .select("*")
+            .eq("id", userData.clinic_id)
+            .single();
+
+          if (clinicData) {
+            setClinicName(clinicData.name || "");
+            setAiTone(clinicData.tone_of_voice || "professional");
+            // Parse enabled_platforms array
+            setEnabledPlatforms(clinicData.enabled_platforms || ["whatsapp"]);
+            setWaPhoneId(clinicData.whatsapp_phone_id || "");
+            setWaToken(clinicData.whatsapp_token || "");
+            setInstaUsername(clinicData.instagram_username || "");
+            setInstaToken(clinicData.instagram_access_token || "");
+            setFbPageId(clinicData.facebook_page_id || "");
+            setFbToken(clinicData.facebook_access_token || "");
+          }
+
+          // Load customizations
+          const { data: customData } = await supabase
+            .from("clinic_customizations")
+            .select("*")
+            .eq("clinic_id", userData.clinic_id)
+            .single();
+
+          if (customData) {
+            setCatalog(customData.catalog || []);
+            setFaqs(customData.faqs || []);
           }
         } catch (e) {
           console.error("Failed to load clinic settings:", e);

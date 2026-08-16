@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
   const [firstName, setFirstName] = useState("Babajide");
+  const [clinicName, setClinicName] = useState("Clinic");
   const [isMockMode, setIsMockMode] = useState(true);
   const [loading, setLoading] = useState(true);
 
@@ -38,11 +39,28 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    const isMock = typeof document !== "undefined" && document.cookie.includes("sb-mock-session=true");
+    const isMock =
+      typeof document !== "undefined" &&
+      document.cookie.includes("sb-mock-session=true");
     setIsMockMode(isMock);
 
     const name = getCookieValue("sb-mock-user-name", "Babajide").split(" ")[0];
     setFirstName(name);
+
+    // Get clinic name from localStorage or cookie
+    if (typeof window !== "undefined") {
+      const registrationData = localStorage.getItem("pending_registration");
+      if (registrationData) {
+        try {
+          const data = JSON.parse(registrationData);
+          if (data.clinicName) {
+            setClinicName(data.clinicName);
+          }
+        } catch (e) {
+          console.error("Failed to parse registration data:", e);
+        }
+      }
+    }
 
     if (isMock) {
       // Load mock items
@@ -80,7 +98,9 @@ export default function DashboardPage() {
     // Fetch live database statistics
     async function loadLiveDashboardStats() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (!user) {
           setLoading(false);
           return;
@@ -98,6 +118,17 @@ export default function DashboardPage() {
         }
 
         const clinicId = profile.clinic_id;
+
+        // Fetch clinic name from database
+        const { data: clinicData } = await supabase
+          .from("clinics")
+          .select("name")
+          .eq("id", clinicId)
+          .single();
+
+        if (clinicData?.name) {
+          setClinicName(clinicData.name);
+        }
 
         // 1. Total Conversations count
         const { count: convCount } = await supabase
@@ -139,7 +170,8 @@ export default function DashboardPage() {
 
         const formattedChats: RecentChat[] = [];
         for (const conv of recentConvs || []) {
-          const diffMs = new Date().getTime() - new Date(conv.last_message_at).getTime();
+          const diffMs =
+            new Date().getTime() - new Date(conv.last_message_at).getTime();
           const diffMins = Math.floor(diffMs / 60000);
           const diffHours = Math.floor(diffMins / 60);
 
@@ -191,8 +223,13 @@ export default function DashboardPage() {
     },
     {
       name: "AI Automation Rate",
-      value: totalConvs > 0 ? `${Math.round(((totalConvs - takeoverCount) / totalConvs) * 100)}%` : "100%",
-      change: isMockMode ? "130 threads automated" : `${totalConvs - takeoverCount} threads automated`,
+      value:
+        totalConvs > 0
+          ? `${Math.round(((totalConvs - takeoverCount) / totalConvs) * 100)}%`
+          : "100%",
+      change: isMockMode
+        ? "130 threads automated"
+        : `${totalConvs - takeoverCount} threads automated`,
       icon: (
         <svg
           className="w-5 h-5 text-emerald-400"
@@ -212,7 +249,9 @@ export default function DashboardPage() {
     {
       name: "Human Escalations",
       value: loading ? "..." : takeoverCount.toString(),
-      change: isMockMode ? "12 threads in inbox" : "Awaiting receptionist response",
+      change: isMockMode
+        ? "12 threads in inbox"
+        : "Awaiting receptionist response",
       icon: (
         <svg
           className="w-5 h-5 text-amber-500"
@@ -232,7 +271,9 @@ export default function DashboardPage() {
     {
       name: "Bookings qualified",
       value: loading ? "..." : revenueValue,
-      change: isMockMode ? "Equivalent Naira revenue" : `${bookingCount} bookings scheduled`,
+      change: isMockMode
+        ? "Equivalent Naira revenue"
+        : `${bookingCount} bookings scheduled`,
       icon: (
         <svg
           className="w-5 h-5 text-teal-400"
@@ -261,7 +302,7 @@ export default function DashboardPage() {
               Welcome back, {firstName}
             </h1>
             <p className="text-slate-400 text-xs mt-1">
-              Here is what is happening at **Zuri Aesthetic & Wellness Clinic** (Lekki, Lagos).
+              Here is what is happening at {clinicName} today.
             </p>
           </div>
           <button
@@ -322,9 +363,13 @@ export default function DashboardPage() {
 
             <div className="divide-y divide-slate-850">
               {loading ? (
-                <div className="text-xs text-slate-500 py-4">Loading threads...</div>
+                <div className="text-xs text-slate-500 py-4">
+                  Loading threads...
+                </div>
               ) : recentChats.length === 0 ? (
-                <div className="text-xs text-slate-500 py-4">No recent threads recorded yet.</div>
+                <div className="text-xs text-slate-500 py-4">
+                  No recent threads recorded yet.
+                </div>
               ) : (
                 recentChats.map((chat) => (
                   <div
