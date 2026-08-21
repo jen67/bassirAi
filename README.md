@@ -1549,14 +1549,25 @@ Proprietary - All rights reserved
 
 ---
 
-## 👨‍💻 Developer
+## � Team
 
 **Project:** BassirAI MVP  
-**Developed By:** [Your Name/Team]  
-**Contact:** [Your Email]  
-**Repository:** [GitHub URL]  
-**Production URL:** [Live URL]
+**Team Representative:** Ngowah Obama Erna
 
+### Team Members
+
+| Name                                                                             | Role                           | Branch                                                                        |
+| -------------------------------------------------------------------------------- | ------------------------------ | ----------------------------------------------------------------------------- |
+| [Emmanuel O.S](https://github.com/jen67/bassirAi/tree/emmanuel-cybersecurity)    | Cybersecurity                  | Security hardening, vulnerability remediation, security testing               |
+| [Gift Amachree](https://github.com/jen67/bassirAi/tree/gift-frontend)            | Frontend Development           | Frontend application development and user-facing functionality                |
+| [Ngowah Obama Erna](https://github.com/jen67/bassirAi/tree/erna-frontend-api)    | Backend / Frontend Development | Authentication, dashboard, inbox, API, database and application functionality |
+| [Nnoge Valdes](https://github.com/jen67/bassirAi/tree/nnoge-uiux)                | UI/UX Design                   | Layout, usability and user experience improvements                            |
+| [Saawuan T. Emmanuel](https://github.com/jen67/bassirAi/tree/saawuan-automation) | AI Automation / n8n Automation | n8n workflow, AI message processing, intent classification and automation     |
+
+### Project Links
+
+- **Repository:** [bassirAi](https://github.com/jen67/bassirAi)
+- **Contact:** [mail](gift.amachree.dev@gmail.com)
 ---
 
 ## 📞 Support
