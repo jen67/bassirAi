@@ -4,15 +4,15 @@
 
 **Team Name:** BassirAI Team  
 **Project Title:** BassirAI – AI-Powered Patient Communication Platform  
-**Project Type:** Web platform + AI automation workflow  
+**Project Type:** Web platform + AI automation workflow
 
-| Team Member | Role / Technical Area |
-| --- | --- |
-| [Insert Name] | Cybersecurity |
-| [Insert Name] | Frontend Development |
-| [Insert Name] | Frontend Development / API Development |
-| [Insert Name] | UI/UX Design |
-| [Insert Name] | Automation / n8n Workflow |
+| Team Member         | Role / Technical Area                  |
+| ------------------- | -------------------------------------- |
+| Emmanuel O.S        | Cybersecurity                          |
+| Gift Amachree       | Frontend Development                   |
+| Ngowah Obama Erna   | Frontend Development / API Development |
+| Nnoge Valdes        | UI/UX Design                           |
+| Saawuan T. Emmanuel | Automation / n8n Workflow              |
 
 ## 2. Project Overview
 
@@ -30,14 +30,17 @@ Our team built a production-ready MVP for BassirAI that includes a dashboard, in
 
 ## 3. Final Project & Relevant Links
 
-| Item | Link |
-| --- | --- |
-| GitHub Repository | [Insert GitHub repository link] |
-| Live / Deployed Project | [Insert live project link] |
-| Figma / Prototype | [Insert Figma link] |
-| Dashboard | [Insert dashboard link] |
-| Demo Video | [Insert demo video link] |
-| Other Relevant Links | [Insert any additional links] |
+| Item                    | Link                                                          |
+| ----------------------- | ------------------------------------------------------------- |
+| GitHub Repository       | https://github.com/jen67/bassirAi                             |
+| Emmanuel Branch         | https://github.com/jen67/bassirAi/tree/emmanuel-cybersecurity |
+| Gift Branch             | https://github.com/jen67/bassirAi/tree/gift-frontend          |
+| Erna Branch             | https://github.com/jen67/bassirAi/tree/erna-frontend-api      |
+| Nnoge Branch            | https://github.com/jen67/bassirAi/tree/nnoge-uiux             |
+| Saawuan Branch          | https://github.com/jen67/bassirAi/tree/saawuan-automation     |
+| Live / Deployed Project | [Add Vercel URL here]                                         |
+| Figma / Prototype       | [Add Figma URL if available]                                  |
+| Demo Video              | [Add demo video URL if available]                             |
 
 ## 4. Tools & Technologies
 
@@ -56,13 +59,13 @@ Our team built a production-ready MVP for BassirAI that includes a dashboard, in
 
 ## 5. Individual Team Member Contributions
 
-| Name | Role / Area | Contribution | Tools Used |
-| --- | --- | --- | --- |
-| [Insert Name] | Cybersecurity | Reviewed security risks, supported secure handling of sensitive data, and helped ensure the platform followed access-control and data-isolation practices. | Supabase RLS, security review, validation checks |
-| [Insert Name] | Frontend Development | Built and refined part of the user interface, including app pages and reusable UI components. | Next.js, React, TypeScript, Tailwind CSS |
-| [Insert Name] | Frontend Development / API Development | Worked on the frontend and handled API creation and integration for the app. | Next.js API routes, TypeScript, fetch API, Supabase |
-| [Insert Name] | UI/UX Design | Designed the user experience, interface layout, and visual flow for the BassirAI app. | Figma, wireframing, interface design principles |
-| [Insert Name] | Automation / n8n Workflow | Built and tested the n8n workflow for AI response automation, webhook handling, and workflow orchestration. | n8n, webhook automation, Groq AI, Google Sheets, Gmail |
+| Name                | Role / Area                            | Challenge Faced                            | Solution Implemented                                      | Tools Used                                        |
+| ------------------- | -------------------------------------- | ------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------- |
+| Emmanuel O.S        | Cybersecurity                          | Multi-tenant security across clinics       | Implemented RLS policies and secure access controls       | Supabase RLS, PostgreSQL, security auditing       |
+| Gift Amachree       | Frontend Development                   | Users needed to view booked appointments   | Built appointments page with Calendar/List/Timeline views | Next.js, React, TypeScript, Tailwind CSS, Vercel  |
+| Ngowah Obama Erna   | Frontend Development / API Development | Complex API integration with n8n           | Created webhook endpoints and fallback message handling   | Next.js API routes, TypeScript, Supabase, n8n     |
+| Nnoge Valdes        | UI/UX Design                           | Creating intuitive clinic workflow         | Designed streamlined dashboard and inbox interface        | Figma, UI/UX design principles, responsive design |
+| Saawuan T. Emmanuel | Automation / n8n Workflow              | Automating patient responses intelligently | Created n8n workflow with RAG and AI fallback logic       | n8n, Groq AI, Pinecone, Google Sheets, Gmail      |
 
 ## 6. Challenges & Solutions
 
